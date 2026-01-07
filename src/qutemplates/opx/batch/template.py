@@ -7,7 +7,7 @@ from matplotlib.artist import Artist
 from matplotlib.figure import Figure
 import matplotlib.pyplot as plt
 
-from ..base_opx import BaseOPX
+from ..base import BaseOPX
 from .interface import BatchInterface
 from ..execution_strategy import OPXExecutionStrategy
 from ..constants import ExportConstants

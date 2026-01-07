@@ -4,7 +4,6 @@
 from abc import ABC, abstractmethod
 from typing import TypeVar, Any
 
-from pycircuit.components import OpxMetadata
 from matplotlib.artist import Artist
 from matplotlib.figure import Figure
 import matplotlib.pyplot as plt
@@ -19,7 +18,16 @@ T = TypeVar('T')
 
 
 class BaseOPX(Template[T], ABC):
-    """Base infrastructure - shared lifecycle, no execute(). Subclasses implement their own."""
+    """
+    Base infrastructure for OPX experiments - provides hardware lifecycle and data management.
+
+    This class provides:
+    - Hardware lifecycle: _open_hardware(), _close_hardware()
+    - Data management: reset(), register_data(), export_data(), save_all()
+    - Abstract hardware setup: opx_metadata(), init_config(), define_program()
+
+    Subclasses (BatchOPX, StreamingOPX, InteractiveOPX) add their own execution patterns.
+    """
 
     def __init__(self):
         self.name = ''
@@ -34,7 +42,7 @@ class BaseOPX(Template[T], ABC):
     # Abstract methods - hardware setup
 
     @abstractmethod
-    def opx_metadata(self) -> OpxMetadata:
+    def opx_metadata(self) -> 'OpxMetadata':
         """Hardware connection metadata."""
         pass
 
@@ -48,13 +56,15 @@ class BaseOPX(Template[T], ABC):
         """QUA program definition (called within program context)."""
         pass
 
-    # Data management
+    # Data management (Public API)
 
-    def _reset(self):
+    def reset(self):
+        """Reset accumulated data and context for new execution."""
         self._accumulated_data = {}
         self._opx_context = None
 
-    def _register_data(self, name: str, data: Any):
+    def register_data(self, name: str, data: Any):
+        """Register data for export with a given name."""
         self._accumulated_data[name] = data
 
     def export_data(self) -> dict:
