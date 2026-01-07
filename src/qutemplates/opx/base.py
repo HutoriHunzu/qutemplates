@@ -56,6 +56,68 @@ class BaseOPX(Template[T], ABC):
         """QUA program definition (called within program context)."""
         pass
 
+    # Hardware management hooks
+
+    def set_opx_handler(self, handler: OPXHandler) -> 'BaseOPX':
+        """
+        Set pre-opened OPX handler for hardware reuse.
+
+        Call this before execute() to reuse an existing hardware connection
+        from another experiment. Useful when you want to maintain hardware
+        state (e.g., keep DC voltages on) between experiments.
+
+        If the handler has an active context (running job), that context
+        will be reused without reopening hardware or re-executing programs.
+        If the handler is fresh (no active context), normal execution flow
+        will proceed.
+
+        Args:
+            handler: OPXHandler instance (may or may not have active context)
+
+        Returns:
+            Self for method chaining
+
+        Example - Reuse active connection:
+            >>> exp1 = MyExperiment()
+            >>> exp1.execute()  # Opens hardware, runs program
+            >>>
+            >>> exp2 = MyExperiment()
+            >>> exp2.set_opx_handler(exp1._opx_handler)  # Reuse handler
+            >>> exp2.execute()  # Uses existing context, no reopen
+            >>> # Both experiments share the same running job
+            >>>
+            >>> # Only close after both are done
+            >>> exp1._close_hardware()
+
+        Example - Method chaining:
+            >>> exp = MyExperiment().set_opx_handler(existing_handler).execute()
+        """
+        self._opx_handler = handler
+        return self
+
+    def create_opx_handler(self) -> OPXHandler:
+        """
+        Create OPX hardware handler.
+
+        Override this method to customize handler creation or provide
+        a pre-opened handler from elsewhere.
+
+        Returns:
+            OPXHandler instance
+
+        Example - Custom handler creation:
+            >>> class MyExperiment(BatchOPX):
+            ...     def __init__(self, shared_handler=None):
+            ...         super().__init__()
+            ...         self._shared = shared_handler
+            ...
+            ...     def create_opx_handler(self):
+            ...         if self._shared:
+            ...             return self._shared
+            ...         return super().create_opx_handler()
+        """
+        return OPXHandler(self.opx_metadata())
+
     # Data management (Public API)
 
     def reset(self):
@@ -98,14 +160,58 @@ class BaseOPX(Template[T], ABC):
 
     # Hardware lifecycle helpers
     def _open_hardware(self) -> OPXContext:
-        """Connect, execute program, return context."""
-        config = self.init_config()
-        self._opx_handler = OPXHandler(self.opx_metadata())
+        """
+        Connect to hardware and execute program.
+
+        Pure orchestration method that calls hooks for each step:
+        1. Check if context already exists (from previous execution)
+        2. Create handler if needed (via create_opx_handler hook)
+        3. Check if handler has active context and reuse it
+        4. Execute normal flow (config + program) if no active context
+
+        Smart hardware reuse:
+        - If handler was set via set_opx_handler() with active context,
+          reuses that context without reopening hardware
+        - If handler is fresh or context closed, executes normally
+        - Enables maintaining hardware state between experiments
+
+        Returns:
+            OPXContext containing job, result handles, and quantum machine
+
+        Example - Normal execution:
+            >>> exp = MyExperiment()
+            >>> ctx = exp._open_hardware()  # Creates handler, executes
+
+        Example - Hardware reuse:
+            >>> exp1 = MyExperiment()
+            >>> exp1.execute()  # Opens hardware
+            >>>
+            >>> exp2 = MyExperiment()
+            >>> exp2.set_opx_handler(exp1._opx_handler)  # Share handler
+            >>> ctx = exp2._open_hardware()  # Reuses active context!
+        """
+        # Step 1: Already have context? Return it
+        if self._opx_context is not None:
+            return self._opx_context
+
+        # Step 2: Create handler if needed (hook - can be overridden)
+        if self._opx_handler is None:
+            self._opx_handler = self.create_opx_handler()
+
+        # Step 3: Handler has active context? Reuse it
+        if self._opx_handler.has_active_context:
+            self._opx_context = self._opx_handler.active_context
+            return self._opx_context
+
+        # Step 4: Fresh handler - normal flow (calls abstract methods)
+        config = self.init_config()  # Abstract method: get config
         ctx = self._opx_handler.open_and_execute(
             config,
-            self.define_program,
+            self.define_program,  # Abstract method: define program
             debug=True
         )
+
+        # Store and return
         self._opx_context = ctx
         return ctx
 
@@ -138,17 +244,6 @@ class BaseOPX(Template[T], ABC):
     @property
     def averager_interface(self) -> AveragerInterface | None:
         return self._averager_interface
-
-    @property
-    def experiment_averager(self) -> Averager:
-        """Deprecated - use self.averager."""
-        import warnings
-        warnings.warn(
-            "experiment_averager is deprecated, use averager instead",
-            DeprecationWarning,
-            stacklevel=2
-        )
-        return self.averager
 
     # Helpers
 

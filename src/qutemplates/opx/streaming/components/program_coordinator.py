@@ -9,7 +9,7 @@ This component handles the program_coordinator pattern where:
 
 from quflow import (Workflow, ParallelNode, FuncTask, create_queue_channel)
 
-from ...node_names import OPXNodeName
+from ...shared.node_names import OPXNodeName
 from ...streaming.interface import StreamingInterface
 
 

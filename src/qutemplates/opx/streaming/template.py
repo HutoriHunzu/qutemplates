@@ -10,7 +10,7 @@ import matplotlib.pyplot as plt
 
 from ..base import BaseOPX
 from .interface import StreamingInterface
-from ..execution_strategy import OPXExecutionStrategy
+from .solver import StreamingStrategy, solve_strategy
 from ..constants import ExportConstants
 
 
@@ -53,7 +53,7 @@ class StreamingOPX(BaseOPX[T]):
 
     def execute(
         self,
-        strategy: OPXExecutionStrategy = OPXExecutionStrategy.STANDARD,
+        strategy: StreamingStrategy = 'live_plotting_with_progress',
         debug_script_path: str | None = None,
         show_execution_graph: bool = False,
     ) -> T:
@@ -72,8 +72,7 @@ class StreamingOPX(BaseOPX[T]):
         self._load_averager_interface()
         interface = self._create_streaming_interface()
 
-        # Solve strategy and execute workflow
-        from ..strategies.new_solver import solve_strategy
+        # Solve strategy and execute workflow using local solver
         workflow = solve_strategy(strategy, interface)
 
         if not workflow.empty:

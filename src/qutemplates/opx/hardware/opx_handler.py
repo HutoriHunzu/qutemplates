@@ -38,6 +38,7 @@ class OPXHandler:
         self.qm: QuantumMachine | QmApi | None = None
         self.job: RunningQmJob | None = None
         self.result_handles: StreamsManager | None = None
+        self._active_context: OPXContext | None = None
 
 
     def _create_new_manager(self) -> QuantumMachinesManager:
@@ -70,6 +71,47 @@ class OPXHandler:
             manager = self._create_new_manager()
             self._ip_to_manager[ip] = manager
         return manager
+
+    @property
+    def has_active_context(self) -> bool:
+        """
+        Check if handler has an active running context.
+
+        Returns True if this handler has successfully executed a program
+        and maintains an active context with running job and quantum machine.
+
+        Returns:
+            True if active context exists with valid qm and job, False otherwise
+
+        Example:
+            >>> handler = OPXHandler(metadata)
+            >>> handler.has_active_context  # False
+            >>> ctx = handler.open_and_execute(config, program, debug=True)
+            >>> handler.has_active_context  # True
+            >>> handler.close()
+            >>> handler.has_active_context  # False
+        """
+        return (self._active_context is not None and
+                self.qm is not None and
+                self.job is not None)
+
+    @property
+    def active_context(self) -> OPXContext | None:
+        """
+        Get active context if available.
+
+        Returns the stored OPXContext from the most recent open_and_execute()
+        call, or None if no context exists or hardware has been closed.
+
+        Returns:
+            OPXContext instance if active, None otherwise
+
+        Example:
+            >>> handler = OPXHandler(metadata)
+            >>> ctx = handler.open_and_execute(config, program, debug=True)
+            >>> reused_ctx = handler.active_context  # Same as ctx
+        """
+        return self._active_context
 
 
     def open(self, config: dict) -> QuantumMachine | QmApi:
@@ -133,6 +175,7 @@ class OPXHandler:
             raise err
         finally:
             self.qm = None
+            self._active_context = None
 
 
     def open_and_execute(
@@ -210,13 +253,16 @@ class OPXHandler:
         # Execute program on hardware
         self.execute(prog)
 
-        # Return context with session-specific state
-        return OPXContext(
+        # Create and store context with session-specific state
+        ctx = OPXContext(
             result_handles=self.result_handles,
             job=self.job,
             qm=self.qm,
             debug_script=debug_script
         )
+        self._active_context = ctx
+
+        return ctx
 
 
 

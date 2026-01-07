@@ -9,7 +9,7 @@ import matplotlib.pyplot as plt
 
 from ..base import BaseOPX
 from .interface import BatchInterface
-from ..execution_strategy import OPXExecutionStrategy
+from .solver import BatchStrategy, solve_strategy
 from ..constants import ExportConstants
 
 
@@ -36,7 +36,7 @@ class BatchOPX(BaseOPX[T]):
         """Process fetched data. Default: return unchanged."""
         return data
 
-    def setup_plot(self) -> tuple[Figure, list[Artist]]:
+    def setup_plot(self) -> tuple[Figure, list[Artist]] | None:
         """Setup plot for live animation."""
         pass
 
@@ -48,7 +48,7 @@ class BatchOPX(BaseOPX[T]):
 
     def execute(
         self,
-        strategy: OPXExecutionStrategy = OPXExecutionStrategy.STANDARD,
+        strategy: BatchStrategy = 'live_plotting_with_progress',
         debug_script_path: str | None = None,
         show_execution_graph: bool = False,
     ) -> T:
@@ -67,8 +67,7 @@ class BatchOPX(BaseOPX[T]):
         self._load_averager_interface()
         interface = self._create_batch_interface()
 
-        # Solve strategy and execute workflow
-        from ..strategies.new_solver import solve_strategy
+        # Solve strategy and execute workflow using local solver
         workflow = solve_strategy(strategy, interface)
 
         if not workflow.empty:

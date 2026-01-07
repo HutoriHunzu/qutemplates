@@ -8,7 +8,7 @@ from quflow import (Workflow, Node, ParallelNode, FuncTask,
                     create_single_item_channel, ConditionPollingTask,
                     TaskContext)
 
-from ...node_names import OPXNodeName
+from ...shared.node_names import OPXNodeName
 from ...experiment_interface import ExperimentInterface
 
 
