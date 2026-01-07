@@ -1,0 +1,30 @@
+[project]
+name = "qutemplates"
+version = "0.2.0"
+description = "Add your description here"
+readme = "README.md"
+authors = [
+    { name = "Uri Goldblatt", email = "uri.goldblatt@gmail.com" }
+]
+requires-python = ">=3.11"
+dependencies = [
+    "qm-qua>=1.2.4a1",
+    "tqdm",
+    "quflow>=0.2.0",
+    "PyQt6"
+]
+
+[project.optional-dependencies]
+dev = ["ruff", "pytest"]
+
+
+[tool.uv]
+prerelease = "allow"
+
+[tool.uv.sources]
+quflow = { git = "https://github.com/HutoriHunzu/quflow.git" }
+
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
