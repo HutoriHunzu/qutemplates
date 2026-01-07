@@ -64,6 +64,7 @@ class BatchOPX(BaseOPX[T]):
         self.register_data(ExportConstants.DEBUG, self.opx_context.debug_script)
 
         # Build and execute workflow
+        # URI: should be changed to export_interface (not need to add the batch prefix)
         self._load_averager_interface()
         interface = self._create_batch_interface()
 
@@ -87,8 +88,13 @@ class BatchOPX(BaseOPX[T]):
 
     # Internal
 
-    def _create_batch_interface(self) -> BatchInterface:
+    def _create_interface(self) -> BatchInterface:
         """Create interface for workflow."""
+        # URI: I want to place all interface related stuff in the same function;
+        # checks if averager is valid, if yes make averager averager interface
+        # checks if setup plot and update plot are valid (basically the idea here is that the user can either implement them or not, if they are not implemented it just means the strategy of live plotting and others cannot be taken place). i think we should just somehow checks if the user implemented it (hopefully it can be easy but if not than i would go about something else as i dont want it to be difficult), if he doesnt the live_plotting interface (something new, containing setup plot, update plot and averager interface) is none (the solver will know not to call for something depends on it), otherwise pass to the batch interface it.
+
+
         return BatchInterface(
             fetch_results=self.fetch_results,
             post_run=self.post_run,

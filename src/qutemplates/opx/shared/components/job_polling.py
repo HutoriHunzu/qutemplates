@@ -1,19 +1,11 @@
-"""Job status polling component for OPX strategies.
-
-This module provides job completion monitoring that sets an interrupt
-when the OPX job finishes, allowing ConditionPollingTasks to gracefully stop.
-"""
-
-from quflow import (Workflow, Node, ParallelNode, FuncTask,
-                    create_single_item_channel, ConditionPollingTask,
-                    TaskContext)
+from quflow import (Workflow, ParallelNode, ContextFuncTask, PollingTask, TaskContext)
 
 from ..node_names import OPXNodeName
-from ...experiment_interface import ExperimentInterface
 from ...hardware import OPXContext
+from functools import partial
 
 
-def check_job_is_running_and_set_interrupt(opx_ctx: OPXContext):
+def check_job_is_running_and_set_interrupt(ctx: TaskContext, opx_ctx: OPXContext):
     """
     Create polling function that monitors job status and sets interrupt when done.
 
@@ -31,17 +23,14 @@ def check_job_is_running_and_set_interrupt(opx_ctx: OPXContext):
         The interrupt mechanism is what allows FETCH, POST, and PROGRESS nodes
         to stop polling once the experiment completes.
     """
-    def wrapper(ctx: TaskContext, data):
-        is_running = opx_ctx.result_handles.is_processing()
-        if not is_running:
-            ctx.interrupt.set()
-
-    return wrapper
+    is_running = opx_ctx.result_handles.is_processing()
+    if not is_running:
+        ctx.interrupt.set()
 
 
 def create_job_polling(
         flow: Workflow,
-        interface: ExperimentInterface):
+        opx_context: OPXContext):
     """
     Add job status polling node to workflow.
 
@@ -66,7 +55,9 @@ def create_job_polling(
 
     job_polling = ParallelNode(
         name=OPXNodeName.JOB_STATUS_POLLING,
-        task=ConditionPollingTask(func=check_job_is_running_and_set_interrupt(interface.opx_context))
+        task=PollingTask(
+            task=ContextFuncTask(
+                func=partial(check_job_is_running_and_set_interrupt, opx_ctx=opx_context)))
     )
 
     flow.add_node(job_polling)

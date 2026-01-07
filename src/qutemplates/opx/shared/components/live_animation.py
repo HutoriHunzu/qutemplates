@@ -4,18 +4,19 @@ This module provides real-time plotting capability by connecting matplotlib
 updates to the data pipeline.
 """
 
-from quflow import (Workflow, Node, ParallelNode, FuncTask,
-                    create_single_item_channel, ConditionPollingTask,
-                    TaskContext)
+from quflow import Workflow, ParallelNode
+
+from qutemplates.opx.hardware.averager import AveragerInterface
 
 from ..node_names import OPXNodeName
-from ...experiment_interface import ExperimentInterface
 from qutemplates.common import LiveAnimationTask
 
 
 def add_live_animation(flow: Workflow,
                        data_source_node: ParallelNode,
-                       interface: ExperimentInterface) -> ParallelNode:
+                       setup_plot,
+                       update_plot,
+                       averager_interface: AveragerInterface | None = None) -> ParallelNode:
     """
     Add live animation node to workflow.
 
@@ -42,17 +43,17 @@ def add_live_animation(flow: Workflow,
         callables must be provided in the interface.
     """
     #
-    if interface.averager_interface:
-        get_current_average = interface.averager_interface.get_current_average
-        max_avg = interface.averager_interface.total
+    if averager_interface:
+        get_current_average = averager_interface.get_current_average
+        max_avg = averager_interface.total
     else:
         get_current_average = None
         max_avg = None
 
     # Create live animation task
     live_anim_task = LiveAnimationTask(
-        setup_func=interface.setup_plot,
-        update=interface.update_plot,
+        setup_func=setup_plot,
+        update=update_plot,
         refresh_time_sec=0.05,
         current_avg_callable=get_current_average,
         max_avg=max_avg

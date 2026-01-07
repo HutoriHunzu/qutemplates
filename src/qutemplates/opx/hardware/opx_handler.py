@@ -141,6 +141,7 @@ class OPXHandler:
         """
         if self.qm is None:
             raise RuntimeError("No open QuantumMachine. Call open(config) first.")
+        # URI: why not to use the active opx context? also for the wait for all results and close.
         self.job = self.qm.execute(prog)
         self.result_handles = self.job.result_handles
         return self.job

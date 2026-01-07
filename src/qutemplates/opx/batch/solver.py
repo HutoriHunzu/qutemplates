@@ -69,7 +69,7 @@ def build_wait_for_all(interface: BatchInterface) -> Workflow:
     Template will do final fetch/post after workflow.
     """
     flow = Workflow()
-    create_job_polling(flow, interface)
+    create_job_polling(flow, interface.opx_context)
     return flow
 
 
@@ -80,8 +80,8 @@ def build_wait_for_progress(interface: BatchInterface) -> Workflow:
     Shows progress during execution but no live data updates.
     """
     flow = Workflow()
-    create_job_polling(flow, interface)
-    create_progress_bar(flow, interface)
+    create_job_polling(flow, interface.opx_context)
+    create_progress_bar(flow, interface.averager_interface)
     return flow
 
 
@@ -93,8 +93,8 @@ def build_live_plotting(interface: BatchInterface) -> Workflow:
     """
     flow = Workflow()
     post_node = create_fetch_post_skeleton(flow, interface)
-    create_job_polling(flow, interface)
-    add_live_animation(flow, post_node, interface)
+    create_job_polling(flow, interface.opx_context)
+    add_live_animation(flow, post_node, interface.setup_plot, interface.update_plot, interface.averager_interface)
     return flow
 
 
@@ -107,9 +107,9 @@ def build_live_plotting_with_progress(interface: BatchInterface) -> Workflow:
     """
     flow = Workflow()
     post_node = create_fetch_post_skeleton(flow, interface)
-    create_job_polling(flow, interface)
-    create_progress_bar(flow, interface)
-    add_live_animation(flow, post_node, interface)
+    create_job_polling(flow, interface.opx_context)
+    create_progress_bar(flow, interface.averager_interface)
+    add_live_animation(flow, post_node, interface.setup_plot, interface.update_plot, interface.averager_interface)
     return flow
 
 
