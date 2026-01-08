@@ -7,11 +7,8 @@ API for direct use.
 
 from dataclasses import dataclass
 from typing import Any
-import numpy as np
 
 from qm import SimulationConfig, CompilerOptionArguments
-
-np.bool8 = np.bool
 
 
 @dataclass
