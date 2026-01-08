@@ -5,8 +5,8 @@ from .interface import BatchInterface
 from .solver import BatchStrategy, solve_strategy
 
 __all__ = [
-    'BatchOPX',
-    'BatchInterface',
-    'BatchStrategy',
-    'solve_strategy',
+    "BatchOPX",
+    "BatchInterface",
+    "BatchStrategy",
+    "solve_strategy",
 ]

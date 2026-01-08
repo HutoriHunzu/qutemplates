@@ -4,17 +4,20 @@ This module provides the core FETCH → POST pipeline components
 using ConditionPollingTask for continuous polling behavior.
 """
 
-from quflow import OutputFuncTask, TransformFuncTask, Workflow, ParallelNode, PollingTask, create_single_item_channel
+from quflow import (
+    OutputFuncTask,
+    TransformFuncTask,
+    Workflow,
+    ParallelNode,
+    PollingTask,
+    create_single_item_channel,
+)
 
 from ...shared.node_names import OPXNodeName
 from ...experiment_interface import ExperimentInterface
 
 
-
-def create_fetch_post_skeleton(
-        flow: Workflow,
-        interface: ExperimentInterface
-) -> ParallelNode:
+def create_fetch_post_skeleton(flow: Workflow, interface: ExperimentInterface) -> ParallelNode:
     """
     Create FETCH → POST pipeline using ConditionPollingTasks.
 
@@ -40,18 +43,21 @@ def create_fetch_post_skeleton(
 
     fetch_to_post = create_single_item_channel()
 
-    fetch_polling = flow.add_node(ParallelNode(
-        OPXNodeName.FETCH,
-        PollingTask(task=OutputFuncTask(func=interface.fetch_results))
-    )
+    fetch_polling = flow.add_node(
+        ParallelNode(
+            OPXNodeName.FETCH,
+            PollingTask(task=OutputFuncTask(func=interface.fetch_results)),
+        )
     )
 
-    post_polling = flow.add_node(ParallelNode(
-        OPXNodeName.POST,
-        PollingTask(task=TransformFuncTask(
-            func=interface.post_run),
+    post_polling = flow.add_node(
+        ParallelNode(
+            OPXNodeName.POST,
+            PollingTask(
+                task=TransformFuncTask(func=interface.post_run),
+            ),
         )
-    ))
+    )
 
     flow.connect_dataflow(fetch_polling, post_polling, fetch_to_post)
 

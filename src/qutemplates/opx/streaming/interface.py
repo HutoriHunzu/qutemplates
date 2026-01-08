@@ -10,7 +10,7 @@ from matplotlib.figure import Figure
 from ..hardware import OPXContext, AveragerInterface
 
 
-T = TypeVar('T')
+T = TypeVar("T")
 
 
 @dataclass

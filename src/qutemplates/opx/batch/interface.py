@@ -9,7 +9,7 @@ from matplotlib.figure import Figure
 from ..hardware import OPXContext, AveragerInterface
 
 
-T = TypeVar('T')
+T = TypeVar("T")
 
 
 @dataclass
@@ -20,6 +20,7 @@ class LivePlottingInterface:
     Contains all methods and interfaces needed for real-time plotting.
     Only created if user implements both setup_plot and update_plot.
     """
+
     setup_plot: Callable[[], tuple[Figure, list[Artist]] | None]
     update_plot: Callable[[list[Artist], Any], list[Artist]]
     averager_interface: AveragerInterface | None

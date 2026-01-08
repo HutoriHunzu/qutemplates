@@ -8,7 +8,7 @@ defining the minimal interface that any experiment must implement.
 from abc import ABC, abstractmethod
 from typing import TypeVar, Generic
 
-T = TypeVar('T')
+T = TypeVar("T")
 
 
 class Template(ABC, Generic[T]):

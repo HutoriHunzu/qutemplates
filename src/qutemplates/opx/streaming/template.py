@@ -14,7 +14,7 @@ from .solver import StreamingStrategy, solve_strategy
 from ..constants import ExportConstants
 
 
-T = TypeVar('T')
+T = TypeVar("T")
 
 
 class StreamingOPX(BaseOPX[T]):
@@ -53,7 +53,7 @@ class StreamingOPX(BaseOPX[T]):
 
     def execute(
         self,
-        strategy: StreamingStrategy = 'live_plotting_with_progress',
+        strategy: StreamingStrategy = "live_plotting_with_progress",
         debug_script_path: str | None = None,
         show_execution_graph: bool = False,
     ) -> T:
@@ -104,5 +104,5 @@ class StreamingOPX(BaseOPX[T]):
             update_plot=self.update_plot,
             experiment_name=self.name,
             opx_context=self.opx_context,
-            averager_interface=self._averager_interface
+            averager_interface=self._averager_interface,
         )

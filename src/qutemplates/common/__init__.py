@@ -8,8 +8,8 @@ from .tasks import LiveAnimationTask, ProgressTask
 
 #
 __all__ = [
-    'ProgressTask',
-    'LiveAnimationTask'
+    "ProgressTask",
+    "LiveAnimationTask",
     # 'ControlPanel',
     # 'FeatureContext',
     # 'ExperimentProtocol',

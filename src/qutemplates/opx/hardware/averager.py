@@ -1,14 +1,9 @@
 import threading
 
 from qm.qua import StreamType, declare, declare_stream, save
-from dataclasses import dataclass, field
-import numpy as np
-import matplotlib.pyplot as plt
-from typing import Iterable, Any
 
-from qm.jobs.running_qm_job import RunningQmJob, StreamsManager
+from qm.jobs.running_qm_job import StreamsManager
 from qm.qua.type_hints import QuaVariable
-from tqdm import tqdm
 
 
 class AveragerInterface:
@@ -53,11 +48,7 @@ class AveragerInterface:
         directly. Users interact with the Averager class during program definition.
     """
 
-    def __init__(self,
-                 save_name: str,
-                 total: int,
-                 result_handles: StreamsManager
-                 ):
+    def __init__(self, save_name: str, total: int, result_handles: StreamsManager):
         """
         Initialize runtime interface.
 
@@ -198,7 +189,5 @@ class Averager:
             # )
 
         return AveragerInterface(
-            save_name=self.save_name,
-            result_handles=result_handles,
-            total=self.total
+            save_name=self.save_name, result_handles=result_handles, total=self.total
         )

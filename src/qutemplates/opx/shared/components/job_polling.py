@@ -1,4 +1,4 @@
-from quflow import (Workflow, ParallelNode, ContextFuncTask, PollingTask, TaskContext)
+from quflow import Workflow, ParallelNode, ContextFuncTask, PollingTask, TaskContext
 
 from ..node_names import OPXNodeName
 from ...hardware import OPXContext
@@ -28,9 +28,7 @@ def check_job_is_running_and_set_interrupt(ctx: TaskContext, opx_ctx: OPXContext
         ctx.interrupt.set()
 
 
-def create_job_polling(
-        flow: Workflow,
-        opx_context: OPXContext):
+def create_job_polling(flow: Workflow, opx_context: OPXContext):
     """
     Add job status polling node to workflow.
 
@@ -57,7 +55,9 @@ def create_job_polling(
         name=OPXNodeName.JOB_STATUS_POLLING,
         task=PollingTask(
             task=ContextFuncTask(
-                func=partial(check_job_is_running_and_set_interrupt, opx_ctx=opx_context)))
+                func=partial(check_job_is_running_and_set_interrupt, opx_ctx=opx_context)
+            )
+        ),
     )
 
     flow.add_node(job_polling)

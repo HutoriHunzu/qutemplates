@@ -13,7 +13,7 @@ from .solver import BatchStrategy, solve_strategy
 from ..constants import ExportConstants
 
 
-T = TypeVar('T')
+T = TypeVar("T")
 
 
 class BatchOPX(BaseOPX[T]):
@@ -43,11 +43,11 @@ class BatchOPX(BaseOPX[T]):
     def update_plot(self, artists: list[Artist], data: T) -> list[Artist]:
         """Update plot with new data."""
         raise NotImplementedError
-    
+
     def plot(self, data: T) -> Figure:
         figure_and_artists = self.setup_plot()
         if figure_and_artists is None:
-            raise ValueError('Please implement setup plot')
+            raise ValueError("Please implement setup plot")
         fig, artists = figure_and_artists
         _ = self.update_plot(artists, data)
         return fig
@@ -56,7 +56,7 @@ class BatchOPX(BaseOPX[T]):
 
     def execute(
         self,
-        strategy: BatchStrategy = 'live_plotting_with_progress',
+        strategy: BatchStrategy = "live_plotting_with_progress",
         debug_script_path: str | None = None,
         show_execution_graph: bool = False,
     ) -> T:
@@ -92,7 +92,6 @@ class BatchOPX(BaseOPX[T]):
         self._close_hardware()
         return self.data
 
-
     def _create_interface(self) -> BatchInterface:
         """
         Create batch interface with all required components.
@@ -109,17 +108,15 @@ class BatchOPX(BaseOPX[T]):
         # Load averager interface if averager is used
         averager_interface = None
         if self._averager is not None:
-            averager_interface = self.averager.generate_interface(
-                self.opx_context.result_handles
-            )
+            averager_interface = self.averager.generate_interface(self.opx_context.result_handles)
             self._averager_interface = averager_interface
 
         # Create live plotting interface only if both methods implemented
-        
+
         live_plotting_interface = LivePlottingInterface(
             setup_plot=self.setup_plot,
             update_plot=self.update_plot,
-            averager_interface=averager_interface
+            averager_interface=averager_interface,
         )
 
         # Create main batch interface
@@ -129,5 +126,5 @@ class BatchOPX(BaseOPX[T]):
             experiment_name=self.name,
             opx_context=self.opx_context,
             averager_interface=averager_interface,
-            live_plotting=live_plotting_interface
+            live_plotting=live_plotting_interface,
         )

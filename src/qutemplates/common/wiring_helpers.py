@@ -18,7 +18,7 @@ def add_live_animation(
     workflow: Workflow,
     data_source_node: Node,
     live_animation_task: LiveAnimationTask,
-    node_name: str
+    node_name: str,
 ) -> Node:
     """
     Wire a live animation task to receive data from a source node.
@@ -57,7 +57,7 @@ def add_live_animation(
         ParallelNode(
             node_name,
             live_animation_task,
-            run_in_main_thread=True  # Required for matplotlib
+            run_in_main_thread=True,  # Required for matplotlib
         )
     )
 
@@ -72,7 +72,7 @@ def add_progress_tracking(
     workflow: Workflow,
     progress_task: ProgressTask,
     node_name: str,
-    depends_on: Node | list[Node] | None = None
+    depends_on: Node | list[Node] | None = None,
 ) -> Node:
     """
     Add a progress tracking task to the workflow.
@@ -110,9 +110,7 @@ def add_progress_tracking(
         its stop_callable returns True. It does not block the main workflow.
     """
     # Create parallel progress node
-    progress_node = workflow.add_node(
-        ParallelNode(node_name, progress_task)
-    )
+    progress_node = workflow.add_node(ParallelNode(node_name, progress_task))
 
     # Add dependencies if specified
     if depends_on is not None:
@@ -124,11 +122,7 @@ def add_progress_tracking(
     return progress_node
 
 
-def connect_data_pipeline(
-    workflow: Workflow,
-    source_node: Node,
-    target_node: Node
-) -> None:
+def connect_data_pipeline(workflow: Workflow, source_node: Node, target_node: Node) -> None:
     """
     Connect two nodes with a single-item data channel.
 

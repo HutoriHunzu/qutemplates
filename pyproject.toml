@@ -24,6 +24,10 @@ prerelease = "allow"
 [tool.uv.sources]
 quflow = { git = "https://github.com/HutoriHunzu/quflow.git" }
 
+[tool.ruff]
+# Set the maximum line length to 79.
+line-length = 104
+
 
 [build-system]
 requires = ["hatchling"]

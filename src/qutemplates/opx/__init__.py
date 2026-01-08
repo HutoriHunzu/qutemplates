@@ -7,10 +7,10 @@ from .interactive import InteractiveOPX
 from .hardware import OPXHandler, OPXContext, Averager
 
 __all__ = [
-    'BatchOPX',
-    'StreamingOPX',
-    'InteractiveOPX',
-    'OPXContext',
-    'OPXHandler',
-    'Averager'
+    "BatchOPX",
+    "StreamingOPX",
+    "InteractiveOPX",
+    "OPXContext",
+    "OPXHandler",
+    "Averager",
 ]

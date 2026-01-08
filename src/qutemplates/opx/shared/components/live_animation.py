@@ -12,11 +12,13 @@ from ..node_names import OPXNodeName
 from qutemplates.common import LiveAnimationTask
 
 
-def add_live_animation(flow: Workflow,
-                       data_source_node: ParallelNode,
-                       setup_plot,
-                       update_plot,
-                       averager_interface: AveragerInterface | None = None) -> ParallelNode:
+def add_live_animation(
+    flow: Workflow,
+    data_source_node: ParallelNode,
+    setup_plot,
+    update_plot,
+    averager_interface: AveragerInterface | None = None,
+) -> ParallelNode:
     """
     Add live animation node to workflow.
 
@@ -56,16 +58,12 @@ def add_live_animation(flow: Workflow,
         update=update_plot,
         refresh_time_sec=0.05,
         current_avg_callable=get_current_average,
-        max_avg=max_avg
+        max_avg=max_avg,
     )
 
     # Create parallel node (must run in main thread for matplotlib)
     live_anim_node = flow.add_node(
-        ParallelNode(
-            OPXNodeName.LIVE_ANIMATION,
-            live_anim_task,
-            run_in_main_thread=True
-        )
+        ParallelNode(OPXNodeName.LIVE_ANIMATION, live_anim_task, run_in_main_thread=True)
     )
 
     # Wire dataflow from source to animation

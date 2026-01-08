@@ -12,10 +12,7 @@ from .interface import StreamingInterface
 
 # Type alias for streaming strategies
 StreamingStrategy = Literal[
-    'wait_for_all',
-    'wait_for_progress',
-    'live_plotting',
-    'live_plotting_with_progress'
+    "wait_for_all", "wait_for_progress", "live_plotting", "live_plotting_with_progress"
 ]
 
 

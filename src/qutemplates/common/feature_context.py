@@ -1,6 +1,6 @@
 """Feature context - clean interface for features without full experiment coupling."""
 
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
     from .control_panel import ControlPanel
@@ -23,8 +23,8 @@ class FeatureContext:
 
     def __init__(
         self,
-        control_panel: 'ControlPanel',
-        experiment: 'ExperimentProtocol',
+        control_panel: "ControlPanel",
+        experiment: "ExperimentProtocol",
     ):
         """
         Initialize feature context.
@@ -46,7 +46,7 @@ class FeatureContext:
 
     # ==================== Capability Accessors ====================
 
-    def get_data_source(self) -> 'DataSource | None':
+    def get_data_source(self) -> "DataSource | None":
         """
         Get data source capability if experiment provides it.
 
@@ -57,11 +57,12 @@ class FeatureContext:
             DataSource implementation if available, None otherwise
         """
         from .protocol.data_source import DataSource
+
         if isinstance(self.experiment, DataSource):
             return self.experiment
         return None
 
-    def get_progress_source(self) -> 'ProgressSource | None':
+    def get_progress_source(self) -> "ProgressSource | None":
         """
         Get progress source capability if experiment provides it.
 
@@ -72,6 +73,7 @@ class FeatureContext:
             ProgressSource implementation if available, None otherwise
         """
         from .protocol.progress_source import ProgressSource
+
         if isinstance(self.experiment, ProgressSource):
             return self.experiment
         return None

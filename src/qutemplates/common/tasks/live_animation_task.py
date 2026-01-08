@@ -6,8 +6,7 @@ with real-time data updates. Platform-agnostic and reusable across different
 workflow systems.
 """
 
-import threading
-from typing import Callable, Any, TypeVar
+from typing import Callable, TypeVar
 import pathlib
 
 from matplotlib.figure import Figure
@@ -23,11 +22,11 @@ from quflow.status import Status
 
 # Load button icons from resources
 dir_path = pathlib.Path(__file__).parent.absolute()
-RESOURCES = dir_path / 'resources'
-STOP_ICON = plt.imread(str(RESOURCES / 'stop_icon.jpg'))
-SAVE_ICON = plt.imread(str(RESOURCES / 'save_icon.png'))
+RESOURCES = dir_path / "resources"
+STOP_ICON = plt.imread(str(RESOURCES / "stop_icon.jpg"))
+SAVE_ICON = plt.imread(str(RESOURCES / "save_icon.png"))
 
-T = TypeVar('T')
+T = TypeVar("T")
 
 SetupFuncType = Callable[[], tuple[Figure, list[Artist]]]
 CleanupFuncType = Callable[[tuple[Figure, list[Artist]]], None]
@@ -90,9 +89,8 @@ class LiveAnimationTask(Task):
         update: UpdateFuncType,
         refresh_time_sec: float = 0.05,
         current_avg_callable: Callable[[], int] | None = None,
-        max_avg: int | None = None
+        max_avg: int | None = None,
     ):
-
         # User-provided callbacks (dependency injection)
         self.update = update
         self.setup_func = setup_func
@@ -136,7 +134,7 @@ class LiveAnimationTask(Task):
             text = self._get_averager_text_formatter(current_avg, max_avg)
             self._text_artist_for_avg.set_text(text)
 
-        return (self._text_artist_for_avg, )
+        return (self._text_artist_for_avg,)
 
     def stop_from_animation(self):
         """Stop animation and close figure (called from animation loop)."""
@@ -156,9 +154,9 @@ class LiveAnimationTask(Task):
             x=1.0,
             y=1.0,
             s=text,
-            fontsize='large',
-            horizontalalignment='right',
-            verticalalignment='top'
+            fontsize="large",
+            horizontalalignment="right",
+            verticalalignment="top",
         )
 
     def setup(self):
@@ -190,7 +188,7 @@ class LiveAnimationTask(Task):
             interval=self.refresh_time_ms,
             blit=False,
             repeat=True,
-            frames=200
+            frames=200,
         )
 
         # This blocks until the figure is closed
@@ -226,7 +224,6 @@ class LiveAnimationTask(Task):
         if self.figure is not None:
             plt.close(self.figure)
 
-
     def stop_when_button_pressed(self, event):
         """Handler for stop button click."""
         self.stop_from_button()
@@ -239,16 +236,15 @@ class LiveAnimationTask(Task):
         """Add stop button to the figure."""
         ax_stop = self.figure.add_axes([0.1, 0.9, 0.08, 0.08])
         ax_stop.set_axis_off()
-        self._stop_button = Button(ax_stop, '', image=STOP_ICON)
+        self._stop_button = Button(ax_stop, "", image=STOP_ICON)
         self._stop_button.on_clicked(self.stop_when_button_pressed)
 
     def add_continue_button(self):
         """Add continue/save button to the figure."""
         ax_continue = self.figure.add_axes([0.9, 0.9, 0.08, 0.08])
         ax_continue.set_axis_off()
-        self._continue_button = Button(ax_continue, '', image=SAVE_ICON)
+        self._continue_button = Button(ax_continue, "", image=SAVE_ICON)
         self._continue_button.on_clicked(self.continue_when_button_pressed)
-
 
     def step(self, frame):
         """

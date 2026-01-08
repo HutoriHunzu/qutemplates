@@ -15,6 +15,6 @@ from .live_animation_task import LiveAnimationTask
 from .progress_task import ProgressTask
 
 __all__ = [
-    'LiveAnimationTask',
-    'ProgressTask',
+    "LiveAnimationTask",
+    "ProgressTask",
 ]

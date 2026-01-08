@@ -15,16 +15,13 @@ from .interface import BatchInterface
 from ..shared.components import (
     create_job_polling,
     create_progress_bar,
-    add_live_animation
+    add_live_animation,
 )
 from .components import create_fetch_post_skeleton
 
 # Type alias for batch strategies
 BatchStrategy = Literal[
-    'wait_for_all',
-    'wait_for_progress',
-    'live_plotting',
-    'live_plotting_with_progress'
+    "wait_for_all", "wait_for_progress", "live_plotting", "live_plotting_with_progress"
 ]
 
 
@@ -51,15 +48,13 @@ def solve_strategy(strategy: BatchStrategy, interface: BatchInterface) -> Workfl
 
     if builder is None:
         available = list(STRATEGY_REGISTRY.keys())
-        raise ValueError(
-            f"Unknown batch strategy: '{strategy}'. "
-            f"Available: {available}"
-        )
+        raise ValueError(f"Unknown batch strategy: '{strategy}'. Available: {available}")
 
     return builder(interface)
 
 
 # Strategy builder functions
+
 
 def build_wait_for_all(interface: BatchInterface) -> Workflow:
     """
@@ -117,7 +112,7 @@ def build_live_plotting(interface: BatchInterface) -> Workflow:
         post_node,
         interface.live_plotting.setup_plot,
         interface.live_plotting.update_plot,
-        interface.live_plotting.averager_interface
+        interface.live_plotting.averager_interface,
     )
     return flow
 
@@ -153,15 +148,15 @@ def build_live_plotting_with_progress(interface: BatchInterface) -> Workflow:
         post_node,
         interface.live_plotting.setup_plot,
         interface.live_plotting.update_plot,
-        interface.live_plotting.averager_interface
+        interface.live_plotting.averager_interface,
     )
     return flow
 
 
 # Registry mapping strategy names to builders
 STRATEGY_REGISTRY = {
-    'wait_for_all': build_wait_for_all,
-    'wait_for_progress': build_wait_for_progress,
-    'live_plotting': build_live_plotting,
-    'live_plotting_with_progress': build_live_plotting_with_progress,
+    "wait_for_all": build_wait_for_all,
+    "wait_for_progress": build_wait_for_progress,
+    "live_plotting": build_live_plotting,
+    "live_plotting_with_progress": build_live_plotting_with_progress,
 }

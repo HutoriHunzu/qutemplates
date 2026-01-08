@@ -88,9 +88,7 @@ class ProgressTask(Task):
         if extra > 0:  # No new data - skip the post_run() and the plot up
             self._pbar.update(extra)
 
-
     def run(self, ctx: TaskContext) -> Status:
-
         self.setup()
 
         while not ctx.interrupt.is_set():
@@ -99,4 +97,3 @@ class ProgressTask(Task):
         self.cleanup()
 
         return Status.FINISHED
-

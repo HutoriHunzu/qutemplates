@@ -9,21 +9,13 @@ Key differences from standard data_acquisition:
 - post_run(chunk) accumulates data vs stateless processing
 """
 
-from quflow import (Workflow, Node, ParallelNode, FuncTask,
-                    create_queue_channel, ConditionPollingTask,
-                    TaskContext)
+from quflow import Workflow, ParallelNode, FuncTask, create_queue_channel
 
 from ...shared.node_names import OPXNodeName
 from ...experiment_interface import ExperimentInterface
 
 
-
-
-
-def create_streaming_fetch_post(
-        flow: Workflow,
-        interface: ExperimentInterface
-) -> ParallelNode:
+def create_streaming_fetch_post(flow: Workflow, interface: ExperimentInterface) -> ParallelNode:
     """
     Create streaming FETCH → POST pipeline using queue channel.
 
@@ -77,18 +69,18 @@ def create_streaming_fetch_post(
     # Queue channel buffers chunks (not single-item)
     fetch_to_post = create_queue_channel()
 
-    fetch_polling = flow.add_node(ParallelNode(
-        OPXNodeName.FETCH,
-        FuncTask(func=interface.fetch_results)
-    )
+    fetch_polling = flow.add_node(
+        ParallelNode(OPXNodeName.FETCH, FuncTask(func=interface.fetch_results))
     )
 
-    post_polling = flow.add_node(ParallelNode(
-        OPXNodeName.POST,
-        FuncTask(
-            func=interface.post_run,
+    post_polling = flow.add_node(
+        ParallelNode(
+            OPXNodeName.POST,
+            FuncTask(
+                func=interface.post_run,
+            ),
         )
-    ))
+    )
 
     flow.connect_dataflow(fetch_polling, post_polling, fetch_to_post)
 

@@ -30,6 +30,7 @@ class SimulationData:
         >>> # Check waveform report
         >>> print(sim_data.waveform_report)
     """
+
     samples: Any  # SimulatedSamples from QM
     waveform_report: Any  # WaveformReport from QM
 
@@ -40,7 +41,7 @@ def simulate_program(
     program,
     duration_cycles: int,
     flags: list[str] | None = None,
-    simulation_interface = None
+    simulation_interface=None,
 ) -> SimulationData:
     """
     Simulate QUA program without hardware execution.
@@ -97,14 +98,14 @@ def simulate_program(
         simulate=SimulationConfig(
             duration=duration_cycles,
             include_analog_waveforms=True,
-            simulation_interface=simulation_interface
+            simulation_interface=simulation_interface,
         ),
-        compiler_options=CompilerOptionArguments(flags=flags or [])
+        compiler_options=CompilerOptionArguments(flags=flags or []),
     )
 
     # Extract results
     return SimulationData(
         samples=job.get_simulated_samples(),
         # samples=None,
-        waveform_report=job.get_simulated_waveform_report()
+        waveform_report=job.get_simulated_waveform_report(),
     )

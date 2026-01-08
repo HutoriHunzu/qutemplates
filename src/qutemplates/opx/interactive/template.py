@@ -7,8 +7,8 @@ from ..base import BaseOPX
 
 
 # Two type parameters: Point (input) and Result (output)
-Point = TypeVar('Point')
-Result = TypeVar('Result')
+Point = TypeVar("Point")
+Result = TypeVar("Result")
 
 
 class InteractiveOPX(BaseOPX[list[Result]], Generic[Point, Result]):
@@ -134,9 +134,7 @@ class InteractiveOPX(BaseOPX[list[Result]], Generic[Point, Result]):
             RuntimeError: If hardware is not active (call setup() first or use open() context manager)
         """
         if not self._opx_handler_active:
-            raise RuntimeError(
-                "Hardware not active. Call setup() or use open() context manager."
-            )
+            raise RuntimeError("Hardware not active. Call setup() or use open() context manager.")
         self.send_point(point)
         measurement = self.fetch_measurement()
         result = self.process_measurement(measurement)

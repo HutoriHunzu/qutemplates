@@ -7,7 +7,7 @@ injection without coupling to the experiment object.
 """
 
 from dataclasses import dataclass
-from typing import Callable, Any, Generator
+from typing import Callable, Any
 from .hardware import OPXContext, AveragerInterface
 
 

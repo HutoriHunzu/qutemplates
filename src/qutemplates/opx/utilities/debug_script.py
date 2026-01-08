@@ -12,5 +12,5 @@
 
 
 def debug_script_to_dict(debug_script: str) -> dict:
-    debug_script_as_str = debug_script.partition('\n\n\n')[0]
-    return dict(enumerate(debug_script_as_str.replace('"', "'").split('\n')))
+    debug_script_as_str = debug_script.partition("\n\n\n")[0]
+    return dict(enumerate(debug_script_as_str.replace('"', "'").split("\n")))

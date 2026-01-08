@@ -11,9 +11,7 @@ from ..node_names import OPXNodeName
 from qutemplates.common.tasks import ProgressTask
 
 
-def create_progress_bar(
-        flow: Workflow,
-        averager_interface: AveragerInterface):
+def create_progress_bar(flow: Workflow, averager_interface: AveragerInterface):
     """
     Add progress bar node to workflow.
 
@@ -38,10 +36,7 @@ def create_progress_bar(
 
     progress_node = ParallelNode(
         name=OPXNodeName.PROGRESS,
-        task=ProgressTask(
-            get_current=averager_interface.update,
-            total=averager_interface.total
-        )
+        task=ProgressTask(get_current=averager_interface.update, total=averager_interface.total),
     )
 
     flow.add_node(progress_node)

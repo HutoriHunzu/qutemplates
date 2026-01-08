@@ -1,3 +1,3 @@
 from .template import InteractiveOPX
 
-__all__ = ['InteractiveOPX']
+__all__ = ["InteractiveOPX"]

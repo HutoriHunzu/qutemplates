@@ -1,4 +1,5 @@
 """OPX hardware interface handler."""
+
 from __future__ import annotations
 
 from typing import Callable
@@ -72,9 +73,8 @@ class OPXHandler:
     @property
     def context(self) -> OPXContext:
         if self._context is None:
-            raise ValueError('Accessing OPX Context without initializing it')
+            raise ValueError("Accessing OPX Context without initializing it")
         return self._context
-
 
     def get_or_create_qmm(self) -> QuantumMachinesManager:
         """
@@ -161,10 +161,7 @@ class OPXHandler:
     # Context generation (no caching)
 
     def open_and_execute(
-        self,
-        config: dict,
-        program_callable: Callable[[], None],
-        debug: bool = False
+        self, config: dict, program_callable: Callable[[], None], debug: bool = False
     ) -> OPXContext:
         """
         High-level: Open QM, execute program, return context.
@@ -206,12 +203,10 @@ class OPXHandler:
 
         # setting opx_context
         context = OPXContext(
-            qm=qm,
-            job=job,
-            result_handles=job.result_handles,
-            debug_script=debug_script)
+            qm=qm, job=job, result_handles=job.result_handles, debug_script=debug_script
+        )
 
         # Return fresh context
         self._context = context
-        
+
         return self.context

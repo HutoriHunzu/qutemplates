@@ -13,5 +13,3 @@ class OPXContext:
     job: RunningQmJob | JobApi
     result_handles: StreamsManager
     debug_script: str | None = None
-
-
