@@ -11,7 +11,7 @@ experiment-level orchestration. This separation allows:
 
 from .opx_context import OPXContext
 from .base_opx_handler import BaseOpxHandler
-from .opx_handler import DefaultOpxHandler, OPXHandler
+from .default_handler import DefaultOpxHandler, OPXHandler
 from .averager import AveragerInterface, Averager
 from .simulation import SimulationData, simulate_program
 

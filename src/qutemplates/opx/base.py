@@ -7,7 +7,7 @@ from typing import TypeVar, Any
 from matplotlib.figure import Figure
 import matplotlib.pyplot as plt
 
-from .hardware import Averager, OPXContext, OPXHandler, AveragerInterface, BaseOpxHandler
+from .hardware import Averager, OPXContext, AveragerInterface, BaseOpxHandler
 from ..experiments.template import Template
 from .utilities import save_all
 from .constants import ExportConstants
@@ -34,21 +34,9 @@ class BaseOPX(Template[T], ABC):
         self.parameters: Any = None
         self._accumulated_data: dict[str, Any] = {}
         self._opx_context: OPXContext | None = None
-        self._opx_handler: OPXHandler | None = None
+        self._opx_handler: BaseOpxHandler | None = None
         self._averager: Averager | None = None
         self._averager_interface: AveragerInterface | None = None
-
-    # Abstract methods - hardware setup
-
-    @abstractmethod
-    def opx_metadata(self):
-        """Hardware connection metadata."""
-        pass
-
-    @abstractmethod
-    def init_config(self) -> dict:
-        """QUA config dictionary."""
-        pass
 
     @abstractmethod
     def define_program(self):
