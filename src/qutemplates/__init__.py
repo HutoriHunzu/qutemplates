@@ -6,6 +6,7 @@ from .opx import (
     StreamingOPX,
     OPXContext,
     OPXHandler,
+    DefaultOpxHandler
 )
 
 __all__ = [
@@ -15,4 +16,5 @@ __all__ = [
     "OPXContext",
     "OPXHandler",
     "Averager",
+    "DefaultOpxHandler"
 ]
