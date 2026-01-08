@@ -1,19 +1,19 @@
 """OPX hardware interface handler."""
+from __future__ import annotations
 
 import logging
 from typing import Callable
 
-from qm import QuantumMachinesManager, QuantumMachine, Program, generate_qua_script
+from qm import QuantumMachinesManager, QuantumMachine, Program, generate_qua_script, FullQuaConfig
 from qm.jobs.running_qm_job import RunningQmJob, StreamsManager
-from qm.api.v2.qm_api import QmApi
 from qm.exceptions import QmFailedToCloseQuantumMachineError, OpenQmException
 from qm.octave import QmOctaveConfig, ClockMode
 from qm.qua import program
 
-from pycircuit.components import OpxMetadata
 from .opx_context import OPXContext
 
 logger = logging.getLogger(__name__)
+
 
 
 class OPXHandler:
@@ -28,28 +28,28 @@ class OPXHandler:
     """
 
     _ip_to_manager: dict[str, QuantumMachinesManager] = {}
-    _instances: dict[str, 'OPXHandler'] = {}  # Singleton instances keyed by IP
+    _instances: dict[str, OPXHandler] = {}  # Singleton instances keyed by IP
 
-    def __new__(cls, opx_metadata: OpxMetadata):
-        """
-        Return singleton instance for this metadata's IP address.
+    # def __new__(cls, opx_metadata: OpxMetadata):
+    #     """
+    #     Return singleton instance for this metadata's IP address.
 
-        Args:
-            opx_metadata: OpxMetadata with host_ip identifying the machine
+    #     Args:
+    #         opx_metadata: OpxMetadata with host_ip identifying the machine
 
-        Returns:
-            Singleton OPXHandler instance for this IP address
-        """
-        key = opx_metadata.host_ip  # Key by IP address
+    #     Returns:
+    #         Singleton OPXHandler instance for this IP address
+    #     """
+    #     key = opx_metadata.host_ip  # Key by IP address
 
-        if key not in cls._instances:
-            # Create new singleton instance for this IP
-            instance = super().__new__(cls)
-            cls._instances[key] = instance
-            instance._initialized = False  # Flag for __init__
-        return cls._instances[key]
+    #     if key not in cls._instances:
+    #         # Create new singleton instance for this IP
+    #         instance = super().__new__(cls)
+    #         cls._instances[key] = instance
+    #         instance._initialized = False  # Flag for __init__
+    #     return cls._instances[key]
 
-    def __init__(self, opx_metadata: OpxMetadata):
+    def __init__(self, opx_metadata):
         """
         Initialize OPX handler (only once per singleton).
 
@@ -62,11 +62,11 @@ class OPXHandler:
             Subsequent calls with same IP return existing instance unchanged.
         """
         # Only initialize once per singleton instance
-        if self._initialized:
-            return
+        # if self._initialized:
+            # return
 
         self.opx_metadata = opx_metadata
-        self.qm: QuantumMachine | QmApi | None = None
+        self.qm: QuantumMachine | None = None
         self.job: RunningQmJob | None = None
         self.result_handles: StreamsManager | None = None
         self._active_context: OPXContext | None = None
@@ -75,29 +75,29 @@ class OPXHandler:
 
 
     def _create_new_manager(self) -> QuantumMachinesManager:
-        octave_config = None
-        if self.opx_metadata.octave_ip:
-            octave_config = QmOctaveConfig()
-            octave_config.add_device_info(
-                'oct1',
-                self.opx_metadata.octave_ip,
-                self.opx_metadata.octave_port
-            )
-            octave_config.set_calibration_db(self.opx_metadata.octave_calibration_path)
+        # octave_config = None
+        # if self.opx_metadata.octave_ip:
+        #     octave_config = QmOctaveConfig()
+        #     octave_config.add_device_info(
+        #         'oct1',
+        #         self.opx_metadata.octave_ip,
+        #         self.opx_metadata.octave_port
+        #     )
+        #     octave_config.set_calibration_db(self.opx_metadata.octave_calibration_path)
 
         return QuantumMachinesManager(
             host=self.opx_metadata.host_ip,
             port=self.opx_metadata.port,
             cluster_name=self.opx_metadata.cluster_name,
-            octave_calibration_db_path=(
-                None if self.opx_metadata.octave_ip
-                else self.opx_metadata.octave_calibration_path
-            ),
-            octave=octave_config
+            # octave_calibration_db_path=(
+            #     None if self.opx_metadata.octave_ip
+            #     else self.opx_metadata.octave_calibration_path
+            # ),
+            # octave=octave_config
         )
 
     @property
-    def qmm(self):
+    def qmm(self) -> QuantumMachinesManager:
         ip = self.opx_metadata.host_ip
         manager = self._ip_to_manager.get(ip)
         if manager is None:
@@ -147,7 +147,7 @@ class OPXHandler:
         return self._active_context
 
 
-    def open(self, config: dict) -> QuantumMachine | QmApi:
+    def open(self, config: dict) -> QuantumMachine:
         """
         Opens a QuantumMachine using the given config.
         Closes other machines on the same ports if needed.
@@ -159,12 +159,12 @@ class OPXHandler:
             logger.error(f"Failed to open QM with config={config}")
             raise open_qm_exception
 
-        # If the user has an octave IP and clock mode, set it
-        if self.opx_metadata.octave_ip and self.opx_metadata.octave_clock_mode:
-            self.qm.octave.set_clock(
-                "oct1",
-                clock_mode=getattr(ClockMode, self.opx_metadata.octave_clock_mode)
-            )
+        # # If the user has an octave IP and clock mode, set it
+        # if self.opx_metadata.octave_ip and self.opx_metadata.octave_clock_mode:
+        #     self.qm.octave.set_clock(
+        #         "oct1",
+        #         clock_mode=getattr(ClockMode, self.opx_metadata.octave_clock_mode)
+        #     )
         return self.qm
 
     def execute(self, prog: Program) -> RunningQmJob:
@@ -174,36 +174,32 @@ class OPXHandler:
 
         Uses active_context as the single source of truth for quantum machine state.
         """
-        # Check for active context with quantum machine
-        if self._active_context is None or self._active_context.qm is None:
-            raise RuntimeError("No open QuantumMachine. Call open(config) first.")
-
         # Execute program using active context's QM
-        self.job = self._active_context.qm.execute(prog)
+        self.job = self.qm.execute(prog)
         self.result_handles = self.job.result_handles
 
-        # Update active context with new job and handles
-        self._active_context = OPXContext(
-            qm=self._active_context.qm,
-            job=self.job,
-            result_handles=self.result_handles,
-            debug_script=self._active_context.debug_script
-        )
+        # # Update active context with new job and handles
+        # self._active_context = OPXContext(
+        #     qm=self._active_context.qm,
+        #     job=self.job,
+        #     result_handles=self.result_handles,
+        #     debug_script=self._active_context.debug_script
+        # )
 
         # Keep backward compat attributes in sync
-        self.qm = self._active_context.qm
+        # self.qm = self._active_context.qm
 
         return self.job
 
-    def wait_for_all_results(self) -> None:
-        """
-        Waits for all results from the current job.
+    # def wait_for_all_results(self) -> None:
+    #     """
+    #     Waits for all results from the current job.
 
-        Uses active_context as the single source of truth for result handles.
-        """
-        if self._active_context is None or self._active_context.result_handles is None:
-            raise RuntimeError("No active context with result handles.")
-        self._active_context.result_handles.wait_for_all_results()
+    #     Uses active_context as the single source of truth for result handles.
+    #     """
+    #     if self._active_context is None or self._active_context.result_handles is None:
+    #         raise RuntimeError("No active context with result handles.")
+    #     self._active_context.result_handles.wait_for_all_results()
 
     def close(self) -> None:
         """
