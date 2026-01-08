@@ -8,7 +8,7 @@ from matplotlib.figure import Figure
 import matplotlib.pyplot as plt
 
 from ..base import BaseOPX
-from .interface import BatchInterface
+from .interface import BatchInterface, LivePlottingInterface
 from .solver import BatchStrategy, solve_strategy
 from ..constants import ExportConstants
 
@@ -36,13 +36,21 @@ class BatchOPX(BaseOPX[T]):
         """Process fetched data. Default: return unchanged."""
         return data
 
-    def setup_plot(self) -> tuple[Figure, list[Artist]] | None:
+    def setup_plot(self) -> tuple[Figure, list[Artist]]:
         """Setup plot for live animation."""
-        pass
+        raise NotImplementedError
 
     def update_plot(self, artists: list[Artist], data: T) -> list[Artist]:
         """Update plot with new data."""
-        return artists
+        raise NotImplementedError
+    
+    def plot(self, data: T) -> Figure:
+        figure_and_artists = self.setup_plot()
+        if figure_and_artists is None:
+            raise ValueError('Please implement setup plot')
+        fig, artists = figure_and_artists
+        _ = self.update_plot(artists, data)
+        return fig
 
     # Execution
 
@@ -84,32 +92,6 @@ class BatchOPX(BaseOPX[T]):
         self._close_hardware()
         return self.data
 
-    # Internal
-
-    def _is_method_implemented(self, method_name: str) -> bool:
-        """
-        Check if user implemented an optional method.
-
-        Method is considered implemented if it exists on the class
-        and is not the base class placeholder (has been overridden).
-
-        Args:
-            method_name: Name of the method to check
-
-        Returns:
-            True if method is implemented by user, False otherwise
-        """
-        method = getattr(self, method_name, None)
-        if method is None:
-            return False
-
-        # Check if it's the base class implementation (not overridden)
-        base_method = getattr(BatchOPX, method_name, None)
-        if base_method and hasattr(method, '__func__') and hasattr(base_method, '__func__'):
-            return method.__func__ != base_method.__func__
-
-        # If base doesn't have the method, user must have implemented it
-        return True
 
     def _create_interface(self) -> BatchInterface:
         """
@@ -132,19 +114,13 @@ class BatchOPX(BaseOPX[T]):
             )
             self._averager_interface = averager_interface
 
-        # Check if user implemented live plotting methods
-        has_setup_plot = self._is_method_implemented('setup_plot')
-        has_update_plot = self._is_method_implemented('update_plot')
-
         # Create live plotting interface only if both methods implemented
-        from .interface import LivePlottingInterface
-        live_plotting_interface = None
-        if has_setup_plot and has_update_plot:
-            live_plotting_interface = LivePlottingInterface(
-                setup_plot=self.setup_plot,
-                update_plot=self.update_plot,
-                averager_interface=averager_interface
-            )
+        
+        live_plotting_interface = LivePlottingInterface(
+            setup_plot=self.setup_plot,
+            update_plot=self.update_plot,
+            averager_interface=averager_interface
+        )
 
         # Create main batch interface
         return BatchInterface(
