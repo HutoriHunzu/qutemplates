@@ -78,7 +78,16 @@ def build_wait_for_progress(interface: BatchInterface) -> Workflow:
     wait_for_progress: Job polling + progress bar.
 
     Shows progress during execution but no live data updates.
+
+    Raises:
+        ValueError: If averager_interface is None (progress requires averaging)
     """
+    if interface.averager_interface is None:
+        raise ValueError(
+            "Strategy 'wait_for_progress' requires averaging to be enabled. "
+            "Use an Averager in your experiment or choose a different strategy."
+        )
+
     flow = Workflow()
     create_job_polling(flow, interface.opx_context)
     create_progress_bar(flow, interface.averager_interface)
@@ -90,11 +99,26 @@ def build_live_plotting(interface: BatchInterface) -> Workflow:
     live_plotting: Job polling + data acquisition + live animation.
 
     Full data pipeline with live updates but no progress bar.
+
+    Raises:
+        ValueError: If live_plotting interface is None (methods not implemented)
     """
+    if interface.live_plotting is None:
+        raise ValueError(
+            "Strategy 'live_plotting' requires setup_plot() and update_plot() "
+            "to be implemented in your experiment class."
+        )
+
     flow = Workflow()
     post_node = create_fetch_post_skeleton(flow, interface)
     create_job_polling(flow, interface.opx_context)
-    add_live_animation(flow, post_node, interface.setup_plot, interface.update_plot, interface.averager_interface)
+    add_live_animation(
+        flow,
+        post_node,
+        interface.live_plotting.setup_plot,
+        interface.live_plotting.update_plot,
+        interface.live_plotting.averager_interface
+    )
     return flow
 
 
@@ -104,12 +128,33 @@ def build_live_plotting_with_progress(interface: BatchInterface) -> Workflow:
 
     Complete feature set: data pipeline, job polling, progress, live plots.
     This is the full-featured/standard strategy.
+
+    Raises:
+        ValueError: If live_plotting or averager_interface is None
     """
+    if interface.live_plotting is None:
+        raise ValueError(
+            "Strategy 'live_plotting_with_progress' requires setup_plot() and update_plot() "
+            "to be implemented in your experiment class."
+        )
+
+    if interface.averager_interface is None:
+        raise ValueError(
+            "Strategy 'live_plotting_with_progress' requires averaging to be enabled. "
+            "Use an Averager in your experiment."
+        )
+
     flow = Workflow()
     post_node = create_fetch_post_skeleton(flow, interface)
     create_job_polling(flow, interface.opx_context)
     create_progress_bar(flow, interface.averager_interface)
-    add_live_animation(flow, post_node, interface.setup_plot, interface.update_plot, interface.averager_interface)
+    add_live_animation(
+        flow,
+        post_node,
+        interface.live_plotting.setup_plot,
+        interface.live_plotting.update_plot,
+        interface.live_plotting.averager_interface
+    )
     return flow
 
 

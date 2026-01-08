@@ -57,43 +57,6 @@ class BaseOPX(Template[T], ABC):
         pass
 
     # Hardware management hooks
-    # URI: not sure i understand this usage and usecase. the main usecase would be to use init_config to generated dict and opx_metadata to get ip and other stuff. then create OPXHandler and use it to handle the openning and closing and exeucting. However there are some helping conditions, 1. cannot have more than one opx experiement running, therefore at any momment there is at most one opx handler that is actually being used. 2. there are some cases where i do want to keep stuff open, for example the qm (you can look at the opx handler). Now due to these cases + the fact that it takes time to open new machine what we can do is two fold: 1. make the OPXHandler a singleton, therefore although i create it in the experiement it is the same instance as one would have outside the experiment without the need to pass it on. 2. the singleton can have different methods or flags to either re-open and close or if open already keep it open. (like using keep open flag makes the closing null inside the opx handler, so from the prespective of the Experiement it is closed.)
-    def set_opx_handler(self, handler: OPXHandler) -> 'BaseOPX':
-        """
-        Set pre-opened OPX handler for hardware reuse.
-
-        Call this before execute() to reuse an existing hardware connection
-        from another experiment. Useful when you want to maintain hardware
-        state (e.g., keep DC voltages on) between experiments.
-
-        If the handler has an active context (running job), that context
-        will be reused without reopening hardware or re-executing programs.
-        If the handler is fresh (no active context), normal execution flow
-        will proceed.
-
-        Args:
-            handler: OPXHandler instance (may or may not have active context)
-
-        Returns:
-            Self for method chaining
-
-        Example - Reuse active connection:
-            >>> exp1 = MyExperiment()
-            >>> exp1.execute()  # Opens hardware, runs program
-            >>>
-            >>> exp2 = MyExperiment()
-            >>> exp2.set_opx_handler(exp1._opx_handler)  # Reuse handler
-            >>> exp2.execute()  # Uses existing context, no reopen
-            >>> # Both experiments share the same running job
-            >>>
-            >>> # Only close after both are done
-            >>> exp1._close_hardware()
-
-        Example - Method chaining:
-            >>> exp = MyExperiment().set_opx_handler(existing_handler).execute()
-        """
-        self._opx_handler = handler
-        return self
 
     def create_opx_handler(self) -> OPXHandler:
         """
@@ -220,21 +183,13 @@ class BaseOPX(Template[T], ABC):
             self._opx_handler.close()
 
     # Properties
-    # URI: i feel a small simplication can be done here not sure but it feels excessive, like the opx_context, maybe we dont have to make it property or anything if anyway it is mostly used by the interface. but not super sure. 
+
     @property
     def opx_context(self) -> OPXContext:
+        """OPX execution context. Available after _open_hardware()."""
         if self._opx_context is None:
-            raise ValueError('Using OPX Context ')
+            raise RuntimeError("OPX context not available. Call _open_hardware() first.")
         return self._opx_context
-
-    @opx_context.setter
-    def opx_context(self, value: OPXContext):
-        self._opx_context = value
-
-    # URI: this is important but it is contained in the opx context so maybe we can remove it
-    @property
-    def result_handles(self):
-        return self.opx_context.result_handles
 
     # URI: also here maybe we dont need the averager interface as property
     @property
@@ -246,13 +201,6 @@ class BaseOPX(Template[T], ABC):
     @property
     def averager_interface(self) -> AveragerInterface | None:
         return self._averager_interface
-
-    # Helpers
-    # URI: also this i am not sure
-    def _load_averager_interface(self):
-        self._averager_interface = self.averager.generate_interface(
-            self.opx_context.result_handles
-        )
 
     # Simulation
 

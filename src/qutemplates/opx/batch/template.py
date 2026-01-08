@@ -64,9 +64,7 @@ class BatchOPX(BaseOPX[T]):
         self.register_data(ExportConstants.DEBUG, self.opx_context.debug_script)
 
         # Build and execute workflow
-        # URI: should be changed to export_interface (not need to add the batch prefix)
-        self._load_averager_interface()
-        interface = self._create_batch_interface()
+        interface = self._create_interface()
 
         # Solve strategy and execute workflow using local solver
         workflow = solve_strategy(strategy, interface)
@@ -88,19 +86,72 @@ class BatchOPX(BaseOPX[T]):
 
     # Internal
 
+    def _is_method_implemented(self, method_name: str) -> bool:
+        """
+        Check if user implemented an optional method.
+
+        Method is considered implemented if it exists on the class
+        and is not the base class placeholder (has been overridden).
+
+        Args:
+            method_name: Name of the method to check
+
+        Returns:
+            True if method is implemented by user, False otherwise
+        """
+        method = getattr(self, method_name, None)
+        if method is None:
+            return False
+
+        # Check if it's the base class implementation (not overridden)
+        base_method = getattr(BatchOPX, method_name, None)
+        if base_method and hasattr(method, '__func__') and hasattr(base_method, '__func__'):
+            return method.__func__ != base_method.__func__
+
+        # If base doesn't have the method, user must have implemented it
+        return True
+
     def _create_interface(self) -> BatchInterface:
-        """Create interface for workflow."""
-        # URI: I want to place all interface related stuff in the same function;
-        # checks if averager is valid, if yes make averager averager interface
-        # checks if setup plot and update plot are valid (basically the idea here is that the user can either implement them or not, if they are not implemented it just means the strategy of live plotting and others cannot be taken place). i think we should just somehow checks if the user implemented it (hopefully it can be easy but if not than i would go about something else as i dont want it to be difficult), if he doesnt the live_plotting interface (something new, containing setup plot, update plot and averager interface) is none (the solver will know not to call for something depends on it), otherwise pass to the batch interface it.
+        """
+        Create batch interface with all required components.
 
+        Consolidates all interface creation logic:
+        - Loads averager interface if averager is used
+        - Checks if user implemented optional methods (setup_plot, update_plot)
+        - Creates LivePlottingInterface only if plotting methods are implemented
+        - Assembles complete BatchInterface for workflow strategies
 
+        Returns:
+            BatchInterface with all components properly initialized
+        """
+        # Load averager interface if averager is used
+        averager_interface = None
+        if self._averager is not None:
+            averager_interface = self.averager.generate_interface(
+                self.opx_context.result_handles
+            )
+            self._averager_interface = averager_interface
+
+        # Check if user implemented live plotting methods
+        has_setup_plot = self._is_method_implemented('setup_plot')
+        has_update_plot = self._is_method_implemented('update_plot')
+
+        # Create live plotting interface only if both methods implemented
+        from .interface import LivePlottingInterface
+        live_plotting_interface = None
+        if has_setup_plot and has_update_plot:
+            live_plotting_interface = LivePlottingInterface(
+                setup_plot=self.setup_plot,
+                update_plot=self.update_plot,
+                averager_interface=averager_interface
+            )
+
+        # Create main batch interface
         return BatchInterface(
             fetch_results=self.fetch_results,
             post_run=self.post_run,
-            setup_plot=self.setup_plot,
-            update_plot=self.update_plot,
             experiment_name=self.name,
             opx_context=self.opx_context,
-            averager_interface=self._averager_interface
+            averager_interface=averager_interface,
+            live_plotting=live_plotting_interface
         )

@@ -18,27 +18,60 @@ logger = logging.getLogger(__name__)
 
 class OPXHandler:
     """
-    OPXHandler that works with a provided OpxMetadata dataclass.
+    Singleton OPX handler that works with a provided OpxMetadata dataclass.
+
+    Implements singleton pattern keyed by IP address - only one handler
+    instance exists per physical OPX machine. This prevents multiple
+    experiments from conflicting and enables hardware reuse via keep_open flag.
+
     If octave_ip is present in OpxMetadata, it sets up the QmOctaveConfig automatically.
     """
 
     _ip_to_manager: dict[str, QuantumMachinesManager] = {}
+    _instances: dict[str, 'OPXHandler'] = {}  # Singleton instances keyed by IP
 
+    def __new__(cls, opx_metadata: OpxMetadata):
+        """
+        Return singleton instance for this metadata's IP address.
 
+        Args:
+            opx_metadata: OpxMetadata with host_ip identifying the machine
+
+        Returns:
+            Singleton OPXHandler instance for this IP address
+        """
+        key = opx_metadata.host_ip  # Key by IP address
+
+        if key not in cls._instances:
+            # Create new singleton instance for this IP
+            instance = super().__new__(cls)
+            cls._instances[key] = instance
+            instance._initialized = False  # Flag for __init__
+        return cls._instances[key]
 
     def __init__(self, opx_metadata: OpxMetadata):
         """
-        Initialize OPX handler.
+        Initialize OPX handler (only once per singleton).
 
         Args:
             opx_metadata: An OpxMetadata dataclass instance with
                          host_ip, port, cluster_name, octave_ip, etc.
+
+        Note:
+            Only initializes on first call for this IP address.
+            Subsequent calls with same IP return existing instance unchanged.
         """
+        # Only initialize once per singleton instance
+        if self._initialized:
+            return
+
         self.opx_metadata = opx_metadata
         self.qm: QuantumMachine | QmApi | None = None
         self.job: RunningQmJob | None = None
         self.result_handles: StreamsManager | None = None
         self._active_context: OPXContext | None = None
+        self.keep_open: bool = False  # Flag to prevent close()
+        self._initialized = True
 
 
     def _create_new_manager(self) -> QuantumMachinesManager:
@@ -138,45 +171,84 @@ class OPXHandler:
         """
         Executes the given QUA program on the current QuantumMachine,
         storing the job internally.
+
+        Uses active_context as the single source of truth for quantum machine state.
         """
-        if self.qm is None:
+        # Check for active context with quantum machine
+        if self._active_context is None or self._active_context.qm is None:
             raise RuntimeError("No open QuantumMachine. Call open(config) first.")
-        # URI: why not to use the active opx context? also for the wait for all results and close.
-        self.job = self.qm.execute(prog)
+
+        # Execute program using active context's QM
+        self.job = self._active_context.qm.execute(prog)
         self.result_handles = self.job.result_handles
+
+        # Update active context with new job and handles
+        self._active_context = OPXContext(
+            qm=self._active_context.qm,
+            job=self.job,
+            result_handles=self.result_handles,
+            debug_script=self._active_context.debug_script
+        )
+
+        # Keep backward compat attributes in sync
+        self.qm = self._active_context.qm
+
         return self.job
 
     def wait_for_all_results(self) -> None:
         """
         Waits for all results from the current job.
+
+        Uses active_context as the single source of truth for result handles.
         """
-        if self.result_handles is None:
-            raise RuntimeError("No result handles. Did you call execute_program first?")
-        self.result_handles.wait_for_all_results()
+        if self._active_context is None or self._active_context.result_handles is None:
+            raise RuntimeError("No active context with result handles.")
+        self._active_context.result_handles.wait_for_all_results()
 
     def close(self) -> None:
         """
         Closes the currently open QuantumMachine, if any,
         and logs whether it was successful.
+
+        Uses active_context as the single source of truth for quantum machine state.
+
+        If keep_open flag is True, skips actual closing but logs the request.
+        This allows keeping hardware open between experiments while maintaining
+        the close() call interface.
         """
-        if not self.qm:
+        # Check if keep_open flag prevents closing
+        if self.keep_open:
+            if self._active_context and self._active_context.qm:
+                logger.debug(
+                    f"keep_open=True, skipping close for QM {self._active_context.qm.id}. "
+                    "Hardware remains open for reuse."
+                )
+            return
+
+        # Check if there's an active context to close
+        if self._active_context is None or self._active_context.qm is None:
             return
 
         try:
             open_machines = self.qmm.list_open_qms()
-            if self.qm.id in open_machines:
-                self.qm.close()
-                logger.debug(f"Quantum Machine {self.qm.id} closed successfully.")
+            qm_id = self._active_context.qm.id
+
+            if qm_id in open_machines:
+                self._active_context.qm.close()
+                logger.debug(f"Quantum Machine {qm_id} closed successfully.")
             else:
                 logger.warning(
-                    f"Machine ID {self.qm.id} not found in list_open_qms()."
+                    f"Machine ID {qm_id} not found in list_open_qms()."
                 )
         except QmFailedToCloseQuantumMachineError as err:
-            logger.error(f"FAILED to close Quantum Machine {self.qm.id}.\n{err}")
+            logger.error(f"FAILED to close Quantum Machine {qm_id}.\n{err}")
             raise err
         finally:
-            self.qm = None
+            # Clear active context and backward compat attributes
             self._active_context = None
+            self.qm = None
+            self.job = None
+            self.result_handles = None
 
 
     def open_and_execute(
