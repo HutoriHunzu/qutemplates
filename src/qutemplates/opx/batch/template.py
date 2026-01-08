@@ -27,22 +27,6 @@ class BatchOPX(BaseOPX[T]):
         """Fetch results from hardware."""
         pass
 
-    def get_opx_handler(self) -> BaseOpxHandler:
-        """
-        Create default OPX handler for batch experiments.
-
-        Override to provide custom handler:
-            class MyBatchExperiment(BatchOPX):
-                def get_opx_handler(self):
-                    return CustomHandler(self.opx_metadata(), self.init_config())
-
-        Returns:
-            DefaultOpxHandler configured for this experiment
-        """
-        return DefaultOpxHandler(self.opx_metadata(), self.init_config())
-
-    # Optional - user can override
-
     def pre_run(self):
         """Setup before execution."""
         pass
