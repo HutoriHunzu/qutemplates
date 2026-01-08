@@ -12,6 +12,7 @@ from ..base import BaseOPX
 from .interface import StreamingInterface
 from .solver import StreamingStrategy, solve_strategy
 from ..constants import ExportConstants
+from ..hardware import BaseOpxHandler, DefaultOpxHandler
 
 
 T = TypeVar("T")
@@ -26,6 +27,20 @@ class StreamingOPX(BaseOPX[T]):
     def program_coordinator(self, job, result_handles, output_queue: Queue):
         """User controls fetch loop. Called ONCE by framework. Writes chunks to queue."""
         pass
+
+    def get_opx_handler(self) -> BaseOpxHandler:
+        """
+        Create default OPX handler for streaming experiments.
+
+        Override to provide custom handler:
+            class MyStreamingExperiment(StreamingOPX):
+                def get_opx_handler(self):
+                    return CustomHandler(self.opx_metadata(), self.init_config())
+
+        Returns:
+            DefaultOpxHandler configured for this experiment
+        """
+        return DefaultOpxHandler(self.opx_metadata(), self.init_config())
 
     # Optional - user can override
 

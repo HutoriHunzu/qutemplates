@@ -10,13 +10,16 @@ experiment-level orchestration. This separation allows:
 """
 
 from .opx_context import OPXContext
-from .opx_handler import OPXHandler
+from .base_opx_handler import BaseOpxHandler
+from .opx_handler import DefaultOpxHandler, OPXHandler
 from .averager import AveragerInterface, Averager
 from .simulation import SimulationData, simulate_program
 
 __all__ = [
     "OPXContext",
-    "OPXHandler",
+    "BaseOpxHandler",
+    "DefaultOpxHandler",
+    "OPXHandler",  # Backward compatibility
     "Averager",
     "AveragerInterface",
     "SimulationData",

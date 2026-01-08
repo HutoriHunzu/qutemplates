@@ -11,6 +11,7 @@ from ..base import BaseOPX
 from .interface import BatchInterface, LivePlottingInterface
 from .solver import BatchStrategy, solve_strategy
 from ..constants import ExportConstants
+from ..hardware import BaseOpxHandler, DefaultOpxHandler
 
 
 T = TypeVar("T")
@@ -25,6 +26,20 @@ class BatchOPX(BaseOPX[T]):
     def fetch_results(self):
         """Fetch results from hardware."""
         pass
+
+    def get_opx_handler(self) -> BaseOpxHandler:
+        """
+        Create default OPX handler for batch experiments.
+
+        Override to provide custom handler:
+            class MyBatchExperiment(BatchOPX):
+                def get_opx_handler(self):
+                    return CustomHandler(self.opx_metadata(), self.init_config())
+
+        Returns:
+            DefaultOpxHandler configured for this experiment
+        """
+        return DefaultOpxHandler(self.opx_metadata(), self.init_config())
 
     # Optional - user can override
 

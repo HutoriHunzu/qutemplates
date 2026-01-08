@@ -23,7 +23,7 @@ from quflow.status import Status
 # Load button icons from resources
 dir_path = pathlib.Path(__file__).parent.absolute()
 RESOURCES = dir_path / "resources"
-STOP_ICON = plt.imread(str(RESOURCES / "stop_icon.jpg"))
+STOP_ICON = plt.imread(str(RESOURCES / "stop_icon.png"))
 SAVE_ICON = plt.imread(str(RESOURCES / "save_icon.png"))
 
 T = TypeVar("T")

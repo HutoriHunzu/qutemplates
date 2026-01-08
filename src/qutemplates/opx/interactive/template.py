@@ -4,6 +4,7 @@ from abc import abstractmethod
 from typing import TypeVar, Generic, Iterable
 
 from ..base import BaseOPX
+from ..hardware import BaseOpxHandler, DefaultOpxHandler
 
 
 # Two type parameters: Point (input) and Result (output)
@@ -44,6 +45,20 @@ class InteractiveOPX(BaseOPX[list[Result]], Generic[Point, Result]):
     def __init__(self):
         super().__init__()
         self._opx_handler_active = False
+
+    def get_opx_handler(self) -> BaseOpxHandler:
+        """
+        Create default OPX handler for interactive experiments.
+
+        Override to provide custom handler:
+            class MyInteractiveExperiment(InteractiveOPX):
+                def get_opx_handler(self):
+                    return CustomHandler(self.opx_metadata(), self.init_config())
+
+        Returns:
+            DefaultOpxHandler configured for this experiment
+        """
+        return DefaultOpxHandler(self.opx_metadata(), self.init_config())
 
     # Abstract - user must implement
 

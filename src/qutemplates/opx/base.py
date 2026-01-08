@@ -7,7 +7,7 @@ from typing import TypeVar, Any
 from matplotlib.figure import Figure
 import matplotlib.pyplot as plt
 
-from .hardware import Averager, OPXContext, OPXHandler, AveragerInterface
+from .hardware import Averager, OPXContext, OPXHandler, AveragerInterface, BaseOpxHandler
 from ..experiments.template import Template
 from .utilities import save_all
 from .constants import ExportConstants
@@ -55,6 +55,28 @@ class BaseOPX(Template[T], ABC):
         """QUA program definition (called within program context)."""
         pass
 
+    @abstractmethod
+    def get_opx_handler(self) -> BaseOpxHandler:
+        """
+        Create and return OPX handler for this experiment.
+
+        This method provides the handler that manages hardware lifecycle.
+        The handler is created with configuration from init_config().
+
+        Default implementation (in subclasses):
+            return DefaultOpxHandler(self.opx_metadata(), self.init_config())
+
+        Custom implementation example:
+            class MyExperiment(BatchOPX):
+                def get_opx_handler(self):
+                    # Use custom handler with keep-alive behavior
+                    return KeepAliveHandler(self.opx_metadata(), self.init_config())
+
+        Returns:
+            Handler implementing BaseOpxHandler interface
+        """
+        pass
+
     # Data management (Public API)
 
     def reset(self):
@@ -99,26 +121,20 @@ class BaseOPX(Template[T], ABC):
     # Hardware lifecycle helpers
 
     @property
-    def opx_handler(self) -> OPXHandler:
+    def opx_handler(self) -> BaseOpxHandler:
+        """Current OPX handler. Available after _open_hardware()."""
         if self._opx_handler is None:
-            self._opx_handler = OPXHandler(self.opx_metadata())
+            raise RuntimeError("OPX handler not available. Call _open_hardware() first.")
         return self._opx_handler
 
     def _open_hardware(self) -> OPXContext:
         """
         Connect to hardware and execute program.
 
-        Pure orchestration method that calls hooks for each step:
-        1. Check if context already exists (from previous execution)
-        2. Create handler if needed (via create_opx_handler hook)
-        3. Check if handler has active context and reuse it
-        4. Execute normal flow (config + program) if no active context
-
-        Smart hardware reuse:
-        - If handler was set via set_opx_handler() with active context,
-          reuses that context without reopening hardware
-        - If handler is fresh or context closed, executes normally
-        - Enables maintaining hardware state between experiments
+        Updated flow:
+        1. Create handler via get_opx_handler() hook (includes config)
+        2. Execute program via handler (config already in handler)
+        3. Store and return context
 
         Returns:
             OPXContext containing job, result handles, and quantum machine
@@ -126,20 +142,12 @@ class BaseOPX(Template[T], ABC):
         Example - Normal execution:
             >>> exp = MyExperiment()
             >>> ctx = exp._open_hardware()  # Creates handler, executes
-
-        Example - Hardware reuse:
-            >>> exp1 = MyExperiment()
-            >>> exp1.execute()  # Opens hardware
-            >>>
-            >>> exp2 = MyExperiment()
-            >>> exp2.set_opx_handler(exp1._opx_handler)  # Share handler
-            >>> ctx = exp2._open_hardware()  # Reuses active context!
         """
-        config = self.init_config()  # Abstract method: get config
+        # Create handler with config via abstract method
+        handler = self.get_opx_handler()
 
-        handler = OPXHandler(self.opx_metadata())
+        # Execute program (config already in handler)
         ctx = handler.open_and_execute(
-            config,
             self.define_program,  # Abstract method: define program
             debug=True,
         )
@@ -186,28 +194,37 @@ class BaseOPX(Template[T], ABC):
         from qm.qua import program
         from qm import generate_qua_script
 
-        # self.pre_run()
-        config = self.init_config()
+        # Create handler (this will call init_config internally via get_opx_handler)
+        handler = self.get_opx_handler()
 
-        opx_handler = OPXHandler(self.opx_metadata())
-
+        # Define program
         with program() as prog:
             self.define_program()
 
+        # Get config from handler
+        config = handler.config if hasattr(handler, "config") else self.init_config()
+
+        # Generate debug script if requested
         if debug_path:
             debug_script = generate_qua_script(prog, config)
             with open(debug_path, "w") as f:
                 f.write(debug_script)
 
+        # Setup simulation flags
         flags = []
         if auto_element_thread:
             flags.append("auto-element-thread")
         if not_strict_timing:
             flags.append("not-strict-timing")
 
+        # Simulate
         duration_cycles = ns_to_clock_cycles(duration_ns)
+
+        # Get QMM from handler
+        qmm = handler.get_or_create_qmm() if hasattr(handler, "get_or_create_qmm") else None
+
         simulation_data = simulate_program(
-            opx_handler.qmm, config, prog, duration_cycles, flags, simulation_interface
+            qmm, config, prog, duration_cycles, flags, simulation_interface
         )
 
         return simulation_data

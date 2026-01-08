@@ -9,21 +9,29 @@ from qm.api.v2.qm_api import QmApi
 from qm.qua import program
 
 from .opx_context import OPXContext
+from .base_opx_handler import BaseOpxHandler
 
 
-class OPXHandler:
+class DefaultOpxHandler(BaseOpxHandler):
     """
-    OPX hardware handler - governs QMM and QM lifecycle.
+    Default OPX hardware handler implementation.
 
-    Responsibilities:
-    - Manage QuantumMachinesManager (one per IP address, shared)
-    - Open/close QuantumMachine (one per configuration)
-    - Execute QUA programs
-    - Generate OPXContext on demand
+    Manages standard hardware lifecycle:
+    - QMM connection (shared per IP address)
+    - QM lifecycle with configuration
+    - QUA program execution
+    - Context generation
+
+    Configuration is passed during construction and stored as part
+    of handler state. This enables:
+    - Handler reuse across multiple program executions
+    - Separation of config from execution
+    - Custom handler subclasses with pre-configured settings
 
     State Management:
     - QMM: Shared per IP address via class-level dict
     - QM: Instance-level, one per handler
+    - Config: Stored at construction time
     - Job: Current running job after execute()
     - Result handles: Current job's result handles
 
@@ -32,18 +40,17 @@ class OPXHandler:
     - Override create_qmm() for custom manager creation
     - Override open() for custom QM opening logic
     - Override close() for custom closing logic (e.g., keep-open)
-    - Override execute() for custom execution logic
 
     Example - Basic usage:
-        >>> handler = OPXHandler(opx_metadata)
-        >>> ctx = handler.open_and_execute(config, my_program, debug=True)
+        >>> handler = DefaultOpxHandler(opx_metadata, config)
+        >>> ctx = handler.open_and_execute(my_program, debug=True)
         >>> data = ctx.result_handles.get('I').fetch_all()
         >>> handler.close()
 
     Example - Custom keep-open behavior:
-        >>> class KeepOpenHandler(OPXHandler):
-        ...     def __init__(self, opx_metadata):
-        ...         super().__init__(opx_metadata)
+        >>> class KeepOpenHandler(DefaultOpxHandler):
+        ...     def __init__(self, opx_metadata, config):
+        ...         super().__init__(opx_metadata, config)
         ...         self.auto_close = False
         ...
         ...     def close(self):
@@ -55,19 +62,18 @@ class OPXHandler:
     # Class-level: Shared QMMs per IP address
     _ip_to_manager: dict[str, QuantumMachinesManager] = {}
 
-    def __init__(self, opx_metadata):
+    def __init__(self, opx_metadata, config: dict):
         """
-        Initialize OPX handler.
+        Initialize handler with metadata and configuration.
 
         Args:
             opx_metadata: OpxMetadata dataclass with connection details
                          (host_ip, port, cluster_name, etc.)
+            config: QUA configuration dictionary
         """
         self.opx_metadata = opx_metadata
+        self.config = config
         self._context: OPXContext | None = None
-        # self.qm: QuantumMachine | None = None
-        # self.job: RunningQmJob | None = None
-        # self.result_handles: StreamsManager | None = None
 
     # QMM management (shared per IP)
     @property
@@ -118,24 +124,25 @@ class OPXHandler:
         )
 
     # QM lifecycle
-    def open(self, config: dict) -> tuple[QuantumMachinesManager, QuantumMachine | QmApi]:
+    def open(self, config: dict | None = None) -> tuple[QuantumMachinesManager, QuantumMachine | QmApi]:
         """
-        Open QuantumMachine with given configuration.
+        Open QuantumMachine with stored or provided configuration.
 
         Override to customize opening behavior (e.g., config validation,
         physical/logical config splitting).
 
         Args:
-            config: QUA configuration dictionary
+            config: Optional config override. If None, uses self.config
 
         Returns:
-            Opened QuantumMachine instance
+            Tuple of (QuantumMachinesManager, QuantumMachine or QmApi)
 
         Raises:
             OpenQmException: If QM fails to open
         """
+        config_to_use = config if config is not None else self.config
         qmm = self.get_or_create_qmm()
-        qm = qmm.open_qm(config, close_other_machines=True)
+        qm = qmm.open_qm(config_to_use, close_other_machines=True)
         return qmm, qm
 
     def close(self) -> None:
@@ -160,17 +167,14 @@ class OPXHandler:
 
     # Context generation (no caching)
 
-    def open_and_execute(
-        self, config: dict, program_callable: Callable[[], None], debug: bool = False
-    ) -> OPXContext:
+    def open_and_execute(self, program_callable: Callable[[], None], debug: bool = False) -> OPXContext:
         """
-        High-level: Open QM, execute program, return context.
+        Execute complete lifecycle using stored configuration.
 
         This is the main entry point used by experiments.
-        Orchestrates the complete lifecycle: open → define program → execute → return context.
+        Orchestrates: open → define program → execute → return context.
 
         Args:
-            config: QUA configuration dictionary
             program_callable: Function containing QUA program logic.
                             Called within `with program() as prog:` context.
                             Signature: () -> None
@@ -183,11 +187,12 @@ class OPXHandler:
             >>> def my_program():
             ...     measure('readout', 'qubit', None, ...)
             >>>
-            >>> ctx = handler.open_and_execute(config, my_program, debug=True)
+            >>> handler = DefaultOpxHandler(opx_metadata, config)
+            >>> ctx = handler.open_and_execute(my_program, debug=True)
             >>> data = ctx.result_handles.get('I').fetch_all()
         """
-        # Open QM with config
-        qmm, qm = self.open(config)
+        # Open QM with stored config
+        qmm, qm = self.open()
 
         # Define QUA program
         with program() as prog:
@@ -196,7 +201,7 @@ class OPXHandler:
         # Generate debug script if requested
         debug_script = None
         if debug:
-            debug_script = generate_qua_script(prog, config)
+            debug_script = generate_qua_script(prog, self.config)
 
         # Execute program
         job = qm.execute(prog)
@@ -210,3 +215,74 @@ class OPXHandler:
         self._context = context
 
         return self.context
+
+
+# Backward compatibility alias
+class OPXHandler(DefaultOpxHandler):
+    """
+    Backward compatibility alias for DefaultOpxHandler.
+
+    DEPRECATED: Use DefaultOpxHandler directly.
+    This alias maintained for existing code compatibility.
+
+    Supports both old and new constructor signatures:
+    - Old: OPXHandler(opx_metadata) - config passed to open_and_execute()
+    - New: OPXHandler(opx_metadata, config) - config stored in handler
+
+    The old signature is automatically detected and handled for compatibility.
+    """
+
+    def __init__(self, opx_metadata, config: dict | None = None):
+        """
+        Initialize handler with backward compatibility.
+
+        Args:
+            opx_metadata: OpxMetadata dataclass
+            config: Optional QUA config. If None, uses old-style behavior
+                   (config must be provided to open_and_execute())
+        """
+        self.opx_metadata = opx_metadata
+        self._stored_config = config
+        self._context: OPXContext | None = None
+
+        # If config provided, initialize as new-style
+        if config is not None:
+            super().__init__(opx_metadata, config)
+
+    def open_and_execute(
+        self,
+        config_or_callable: dict | Callable[[], None],
+        program_callable: Callable[[], None] | None = None,
+        debug: bool = False,
+    ) -> OPXContext:
+        """
+        Execute with backward compatibility for both signatures.
+
+        Old signature: open_and_execute(config, program_callable, debug=False)
+        New signature: open_and_execute(program_callable, debug=False)
+
+        Args:
+            config_or_callable: Either config dict (old) or program callable (new)
+            program_callable: Program callable (old style only)
+            debug: Debug flag
+
+        Returns:
+            OPXContext with job, result handles, and QM
+        """
+        # Detect which signature is being used
+        if program_callable is not None:
+            # Old signature: (config, program_callable, debug)
+            config = config_or_callable
+            # Initialize parent if not already done
+            if self._stored_config is None:
+                # Temporarily initialize with config
+                super().__init__(self.opx_metadata, config)
+            return super().open_and_execute(program_callable, debug)
+        else:
+            # New signature: (program_callable, debug)
+            if self._stored_config is None:
+                raise ValueError(
+                    "Config not provided during construction. "
+                    "Use OPXHandler(metadata, config) or pass config to open_and_execute()"
+                )
+            return super().open_and_execute(config_or_callable, debug)
