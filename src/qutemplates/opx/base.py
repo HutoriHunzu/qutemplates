@@ -82,13 +82,10 @@ class BaseOPX(Template[T], ABC):
         self._accumulated_data[name] = data
 
     def export_data(self) -> dict:
-        def _helper():
-            for k in ExportConstants:
-                v = self._accumulated_data.get(k)
-                if v:
-                    yield k, v
-
-        return dict(_helper())
+        """Export accumulated data filtered by ExportConstants."""
+        return {k: self._accumulated_data[k]
+                for k in ExportConstants
+                if k in self._accumulated_data}
 
     def save_all(
         self,
@@ -121,20 +118,10 @@ class BaseOPX(Template[T], ABC):
         return self._opx_handler
 
     def _open_hardware(self) -> OPXContext:
-        """
-        Connect to hardware and execute program.
-
-        Updated flow:
-        1. Create handler via construct_opx_handler() hook (includes config)
-        2. Execute program via handler (config already in handler)
-        3. Store and return context
+        """Connect to hardware and execute program.
 
         Returns:
-            OPXContext containing job, result handles, and quantum machine
-
-        Example - Normal execution:
-            >>> exp = MyExperiment()
-            >>> ctx = exp._open_hardware()  # Creates handler, executes
+            OPXContext containing job, result handles, and quantum machine.
         """
         # Create handler with config via abstract method
         handler = self.construct_opx_handler()
@@ -151,6 +138,7 @@ class BaseOPX(Template[T], ABC):
         return ctx
 
     def _close_hardware(self):
+        """Close hardware connection via handler."""
         self.opx_handler.close()
 
     @property
@@ -160,7 +148,6 @@ class BaseOPX(Template[T], ABC):
             raise RuntimeError("OPX context not available. Call _open_hardware() first.")
         return self._opx_context
 
-    # URI: also here maybe we dont need the averager interface as property
     @property
     def averager(self) -> Averager:
         if self._averager is None:
@@ -173,6 +160,13 @@ class BaseOPX(Template[T], ABC):
 
     # Simulation
 
+    def _build_program(self):
+        """Build QUA program by calling define_program() within program context."""
+        from qm.qua import program
+        with program() as prog:
+            self.define_program()
+        return prog
+
     def simulate(
         self,
         duration_ns: int,
@@ -181,25 +175,31 @@ class BaseOPX(Template[T], ABC):
         not_strict_timing: bool = False,
         simulation_interface=None,
     ):
-        """Simulate without hardware execution."""
+        """Simulate program without hardware execution.
+
+        Args:
+            duration_ns: Simulation duration in nanoseconds.
+            debug_path: Optional path to save QUA debug script.
+            auto_element_thread: Enable auto-element-thread simulation flag.
+            not_strict_timing: Enable not-strict-timing simulation flag.
+            simulation_interface: Optional simulation interface.
+
+        Returns:
+            Simulation data from QM simulator.
+        """
         from .hardware.simulation import simulate_program
         from .utilities import ns_to_clock_cycles
-        from qm.qua import program
         from qm import generate_qua_script
 
-        # Create handler (this will call init_config internally via construct_opx_handler)
+        # Create handler with config
         handler = self.construct_opx_handler()
 
-        # Define program
-        with program() as prog:
-            self.define_program()
-
-        # Get config from handler
-        config = handler.config if hasattr(handler, "config") else self.init_config()
+        # Build program
+        prog = self._build_program()
 
         # Generate debug script if requested
         if debug_path:
-            debug_script = generate_qua_script(prog, config)
+            debug_script = generate_qua_script(prog, handler.config)
             with open(debug_path, "w") as f:
                 f.write(debug_script)
 
@@ -210,14 +210,11 @@ class BaseOPX(Template[T], ABC):
         if not_strict_timing:
             flags.append("not-strict-timing")
 
-        # Simulate
+        # Simulate using handler's QMM and config
         duration_cycles = ns_to_clock_cycles(duration_ns)
-
-        # Get QMM from handler
         qmm = handler.get_or_create_qmm() if hasattr(handler, "get_or_create_qmm") else None
 
-        simulation_data = simulate_program(
-            qmm, config, prog, duration_cycles, flags, simulation_interface
+        return simulate_program(
+            qmm, handler.config, prog, duration_cycles,
+            flags, simulation_interface
         )
-
-        return simulation_data
