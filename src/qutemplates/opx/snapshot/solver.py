@@ -1,5 +1,5 @@
 """
-Batch strategy solver - builds workflows for BatchOPX experiments.
+Snapshot strategy solver - builds workflows for SnapshotOPX experiments.
 
 Strategies:
 - 'wait_for_all': Only job polling (minimal)
@@ -11,7 +11,7 @@ Strategies:
 from typing import Literal
 from quflow import Workflow
 
-from .interface import BatchInterface
+from .interface import SnapshotInterface
 from ..shared.components import (
     create_job_polling,
     create_progress_bar,
@@ -19,19 +19,19 @@ from ..shared.components import (
 )
 from .components import create_fetch_post_skeleton
 
-# Type alias for batch strategies
-BatchStrategy = Literal[
+# Type alias for snapshot strategies
+SnapshotStrategy = Literal[
     "wait_for_all", "wait_for_progress", "live_plotting", "live_plotting_with_progress"
 ]
 
 
-def solve_strategy(strategy: BatchStrategy, interface: BatchInterface) -> Workflow:
+def solve_strategy(strategy: SnapshotStrategy, interface: SnapshotInterface) -> Workflow:
     """
-    Solve batch strategy and return workflow.
+    Solve snapshot strategy and return workflow.
 
     Args:
         strategy: Strategy name (Literal for easy specification)
-        interface: BatchInterface with experiment methods
+        interface: SnapshotInterface with experiment methods
 
     Returns:
         Configured workflow
@@ -40,7 +40,7 @@ def solve_strategy(strategy: BatchStrategy, interface: BatchInterface) -> Workfl
         ValueError: If strategy name not found
 
     Example:
-        >>> interface = BatchInterface(...)
+        >>> interface = SnapshotInterface(...)
         >>> workflow = solve_strategy('live_plotting_with_progress', interface)
         >>> workflow.execute()
     """
@@ -48,7 +48,7 @@ def solve_strategy(strategy: BatchStrategy, interface: BatchInterface) -> Workfl
 
     if builder is None:
         available = list(STRATEGY_REGISTRY.keys())
-        raise ValueError(f"Unknown batch strategy: '{strategy}'. Available: {available}")
+        raise ValueError(f"Unknown snapshot strategy: '{strategy}'. Available: {available}")
 
     return builder(interface)
 
@@ -56,7 +56,7 @@ def solve_strategy(strategy: BatchStrategy, interface: BatchInterface) -> Workfl
 # Strategy builder functions
 
 
-def build_wait_for_all(interface: BatchInterface) -> Workflow:
+def build_wait_for_all(interface: SnapshotInterface) -> Workflow:
     """
     wait_for_all: Only job polling (no data acquisition during workflow).
 
@@ -68,7 +68,7 @@ def build_wait_for_all(interface: BatchInterface) -> Workflow:
     return flow
 
 
-def build_wait_for_progress(interface: BatchInterface) -> Workflow:
+def build_wait_for_progress(interface: SnapshotInterface) -> Workflow:
     """
     wait_for_progress: Job polling + progress bar.
 
@@ -89,7 +89,7 @@ def build_wait_for_progress(interface: BatchInterface) -> Workflow:
     return flow
 
 
-def build_live_plotting(interface: BatchInterface) -> Workflow:
+def build_live_plotting(interface: SnapshotInterface) -> Workflow:
     """
     live_plotting: Job polling + data acquisition + live animation.
 
@@ -117,7 +117,7 @@ def build_live_plotting(interface: BatchInterface) -> Workflow:
     return flow
 
 
-def build_live_plotting_with_progress(interface: BatchInterface) -> Workflow:
+def build_live_plotting_with_progress(interface: SnapshotInterface) -> Workflow:
     """
     live_plotting_with_progress: All features.
 

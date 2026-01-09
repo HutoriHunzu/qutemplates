@@ -1,24 +1,45 @@
-# Batch experiment: fetch-all semantics
+# Snapshot experiment: fetch all accumulated data at once
 
 from abc import abstractmethod
 from typing import TypeVar
 
+import matplotlib.pyplot as plt
 from matplotlib.artist import Artist
 from matplotlib.figure import Figure
-import matplotlib.pyplot as plt
 
 from ..base import BaseOPX
-from .interface import BatchInterface, LivePlottingInterface
-from .solver import BatchStrategy, solve_strategy
 from ..constants import ExportConstants
-from ..hardware import BaseOpxHandler, DefaultOpxHandler
-
+from .interface import SnapshotInterface, LivePlottingInterface
+from .solver import SnapshotStrategy, solve_strategy
 
 T = TypeVar("T")
 
 
-class BatchOPX(BaseOPX[T]):
-    """Batch: run to completion, fetch all, process."""
+class SnapshotOPX(BaseOPX[T]):
+    """Snapshot OPX template for experiments with continuous data accumulation.
+
+    Designed for programs where data is continuously updated and always accessible.
+    The fetch_results() method retrieves all accumulated data from beginning to time t.
+    No backpressure needed as data cannot be overwritten.
+
+    Abstract Methods:
+        define_program(): Define QUA program (from BaseOPX).
+        construct_opx_handler(): Create OPX handler for hardware lifecycle (from BaseOPX).
+        fetch_results(): Fetch all accumulated results from hardware.
+
+    Optional Methods:
+        pre_run(): Setup before execution.
+        post_run(data): Post-process fetched data (default: return unchanged).
+        setup_plot(): Setup matplotlib Figure/Artists for live animation.
+        update_plot(artists, data): Update plot with new data.
+
+    Strategies:
+        Four execution strategies available via execute(strategy=...):
+            wait_for_all: Minimal (no live updates).
+            wait_for_progress: Adds progress bar.
+            live_plotting: Adds real-time animation.
+            live_plotting_with_progress: Full-featured (default).
+    """
 
     # Abstract - user must implement
 
@@ -55,11 +76,11 @@ class BatchOPX(BaseOPX[T]):
 
     def execute(
         self,
-        strategy: BatchStrategy = "live_plotting_with_progress",
+        strategy: SnapshotStrategy = "live_plotting_with_progress",
         debug_script_path: str | None = None,
         show_execution_graph: bool = False,
     ) -> T:
-        """Execute batch experiment with workflow."""
+        """Execute snapshot experiment with workflow."""
 
         # Reset and setup
         self.reset()
@@ -91,18 +112,18 @@ class BatchOPX(BaseOPX[T]):
         self._close_hardware()
         return self.data
 
-    def _create_interface(self) -> BatchInterface:
+    def _create_interface(self) -> SnapshotInterface:
         """
-        Create batch interface with all required components.
+        Create snapshot interface with all required components.
 
         Consolidates all interface creation logic:
         - Loads averager interface if averager is used
         - Checks if user implemented optional methods (setup_plot, update_plot)
         - Creates LivePlottingInterface only if plotting methods are implemented
-        - Assembles complete BatchInterface for workflow strategies
+        - Assembles complete SnapshotInterface for workflow strategies
 
         Returns:
-            BatchInterface with all components properly initialized
+            SnapshotInterface with all components properly initialized
         """
         # Load averager interface if averager is used
         averager_interface = None
@@ -118,8 +139,8 @@ class BatchOPX(BaseOPX[T]):
             averager_interface=averager_interface,
         )
 
-        # Create main batch interface
-        return BatchInterface(
+        # Create main snapshot interface
+        return SnapshotInterface(
             fetch_results=self.fetch_results,
             post_run=self.post_run,
             experiment_name=self.name,

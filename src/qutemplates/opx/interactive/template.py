@@ -46,13 +46,13 @@ class InteractiveOPX(BaseOPX[list[Result]], Generic[Point, Result]):
         super().__init__()
         self._opx_handler_active = False
 
-    def get_opx_handler(self) -> BaseOpxHandler:
+    def construct_opx_handler(self) -> BaseOpxHandler:
         """
         Create default OPX handler for interactive experiments.
 
         Override to provide custom handler:
             class MyInteractiveExperiment(InteractiveOPX):
-                def get_opx_handler(self):
+                def construct_opx_handler(self):
                     return CustomHandler(self.opx_metadata(), self.init_config())
 
         Returns:

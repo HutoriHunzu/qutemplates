@@ -28,13 +28,13 @@ class StreamingOPX(BaseOPX[T]):
         """User controls fetch loop. Called ONCE by framework. Writes chunks to queue."""
         pass
 
-    def get_opx_handler(self) -> BaseOpxHandler:
+    def construct_opx_handler(self) -> BaseOpxHandler:
         """
         Create default OPX handler for streaming experiments.
 
         Override to provide custom handler:
             class MyStreamingExperiment(StreamingOPX):
-                def get_opx_handler(self):
+                def construct_opx_handler(self):
                     return CustomHandler(self.opx_metadata(), self.init_config())
 
         Returns:

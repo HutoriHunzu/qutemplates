@@ -1,4 +1,4 @@
-# Batch experiment interface for workflow construction
+# Snapshot experiment interface for workflow construction
 
 from dataclasses import dataclass
 from typing import Callable, TypeVar, Generic, Any
@@ -27,8 +27,8 @@ class LivePlottingInterface:
 
 
 @dataclass
-class BatchInterface(Generic[T]):
-    """Interface for batch workflow - framework polls fetch_results periodically."""
+class SnapshotInterface(Generic[T]):
+    """Interface for snapshot workflow - framework polls fetch_results periodically."""
 
     fetch_results: Callable[[], T | None]  # Live preview
     post_run: Callable[[T], T]  # Process preview

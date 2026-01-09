@@ -17,15 +17,26 @@ T = TypeVar("T")
 
 
 class BaseOPX(Template[T], ABC):
-    """
-    Base infrastructure for OPX experiments - provides hardware lifecycle and data management.
+    """Base infrastructure for OPX experiments with hardware lifecycle and data management.
 
-    This class provides:
-    - Hardware lifecycle: _open_hardware(), _close_hardware()
-    - Data management: reset(), register_data(), export_data(), save_all()
-    - Abstract hardware setup: opx_metadata(), init_config(), define_program()
+    Provides core functionality for all OPX experiment types including hardware
+    connection, program execution, data registration, and export capabilities.
+    Subclasses define specific execution patterns (snapshot, streaming, interactive).
 
-    Subclasses (BatchOPX, StreamingOPX, InteractiveOPX) add their own execution patterns.
+    Abstract Methods:
+        define_program(): Define QUA program within program context.
+        construct_opx_handler(): Create OPX handler for hardware lifecycle.
+
+    Infrastructure Provided:
+        Hardware lifecycle: _open_hardware(), _close_hardware().
+        Data management: reset(), register_data(), export_data(), save_all().
+        Simulation: simulate() for hardware-free testing.
+        Properties: opx_context, opx_handler, averager, averager_interface.
+
+    Subclasses:
+        SnapshotOPX: Fetch all accumulated data at once.
+        StreamingOPX: Incremental chunk-based data fetching.
+        InteractiveOPX: Point-by-point evaluation for optimization.
     """
 
     def __init__(self):
@@ -44,24 +55,18 @@ class BaseOPX(Template[T], ABC):
         pass
 
     @abstractmethod
-    def get_opx_handler(self) -> BaseOpxHandler:
-        """
-        Create and return OPX handler for this experiment.
+    def construct_opx_handler(self) -> BaseOpxHandler:
+        """Construct OPX handler for hardware lifecycle management.
 
-        This method provides the handler that manages hardware lifecycle.
-        The handler is created with configuration from init_config().
-
-        Default implementation (in subclasses):
-            return DefaultOpxHandler(self.opx_metadata(), self.init_config())
-
-        Custom implementation example:
-            class MyExperiment(BatchOPX):
-                def get_opx_handler(self):
-                    # Use custom handler with keep-alive behavior
-                    return KeepAliveHandler(self.opx_metadata(), self.init_config())
+        Creates and configures the handler that manages hardware connection,
+        program execution, and cleanup. Called once during _open_hardware().
 
         Returns:
-            Handler implementing BaseOpxHandler interface
+            BaseOpxHandler: Configured handler instance.
+
+        Note:
+            Default implementation: DefaultOpxHandler(self.opx_metadata(), self.init_config())
+            Custom handlers: Override for specialized behavior (e.g., KeepAliveHandler).
         """
         pass
 
@@ -120,7 +125,7 @@ class BaseOPX(Template[T], ABC):
         Connect to hardware and execute program.
 
         Updated flow:
-        1. Create handler via get_opx_handler() hook (includes config)
+        1. Create handler via construct_opx_handler() hook (includes config)
         2. Execute program via handler (config already in handler)
         3. Store and return context
 
@@ -132,7 +137,7 @@ class BaseOPX(Template[T], ABC):
             >>> ctx = exp._open_hardware()  # Creates handler, executes
         """
         # Create handler with config via abstract method
-        handler = self.get_opx_handler()
+        handler = self.construct_opx_handler()
 
         # Execute program (config already in handler)
         ctx = handler.open_and_execute(
@@ -182,8 +187,8 @@ class BaseOPX(Template[T], ABC):
         from qm.qua import program
         from qm import generate_qua_script
 
-        # Create handler (this will call init_config internally via get_opx_handler)
-        handler = self.get_opx_handler()
+        # Create handler (this will call init_config internally via construct_opx_handler)
+        handler = self.construct_opx_handler()
 
         # Define program
         with program() as prog:
