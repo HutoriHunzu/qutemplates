@@ -1,64 +1,44 @@
 # Interactive experiment: point-by-point evaluation
 
+from __future__ import annotations
+
 from abc import abstractmethod
 from collections.abc import Iterable
 from typing import Generic, TypeVar
 
 from ..base import BaseOPX
-from ..handler import BaseOpxHandler, DefaultOpxHandler
+from ..handler import BaseOpxHandler, OPXContext
 
 # Two type parameters: Point (input) and Result (output)
 Point = TypeVar("Point")
 Result = TypeVar("Result")
 
 
-class InteractiveOPX(BaseOPX[list[Result]], Generic[Point, Result]):
-    """
-    Interactive OPX experiment for point-by-point evaluation (optimizer-driven).
+class InteractiveOPX(BaseOPX, Generic[Point, Result]):
+    """Interactive template: point-by-point evaluation for optimizers.
 
-    This template is designed for external optimizers that need to evaluate
-    individual parameter points and use the results to decide the next point.
+    For external optimizers that evaluate parameter points iteratively.
+    Implement define_program(), construct_opx_handler(), send_point(),
+    fetch_measurement(), and process_measurement().
 
-    Three usage patterns supported:
-
-    1. **Context Manager (Recommended)**:
-        with exp.open() as evaluate:
-            for point in optimizer_points:
-                result = evaluate(point)
-
-    2. **Manual Control**:
-        exp.setup()
-        try:
-            for point in optimizer_points:
-                result = exp.evaluate(point)
-        finally:
-            exp.cleanup()
-
-    3. **Batch Convenience**:
-        results = exp.run(points)
-
-    Type Parameters:
-        Point: Input parameter type
-        Result: Output result type
+    Usage patterns:
+    1. Context manager: with exp.open() as evaluate: result = evaluate(point)
+    2. Manual: exp.setup() → exp.evaluate(point) → exp.cleanup()
+    3. Batch: results = exp.run(points)
     """
 
-    def __init__(self):
+    def __init__(self) -> None:
         super().__init__()
         self._opx_handler_active = False
+        self._opx_context: OPXContext | None = None
+        self.data: list[Result] = []
 
-    def construct_opx_handler(self) -> BaseOpxHandler:
-        """
-        Create default OPX handler for interactive experiments.
-
-        Override to provide custom handler:
-            class MyInteractiveExperiment(InteractiveOPX):
-                def construct_opx_handler(self):
-                    return CustomHandler(self.opx_metadata(), self.init_config())
-
-        Returns:
-            DefaultOpxHandler configured for this experiment
-        """
-        return DefaultOpxHandler(self.opx_metadata(), self.init_config())
+    @property
+    def opx_context(self) -> OPXContext:
+        """Current execution context. Available after setup()."""
+        if self._opx_context is None:
+            raise ValueError("Context not available. Call setup() first.")
+        return self._opx_context
 
     # Abstract - user must implement
 
@@ -127,12 +107,8 @@ class InteractiveOPX(BaseOPX[list[Result]], Generic[Point, Result]):
 
     def setup(self):
         """Start program, prepare for interactive evaluation."""
-        self.reset()
         self.pre_run()
-
-        # Open hardware
-        self._open_hardware()
-        self._load_averager_interface()
+        self._opx_context = self.opx_handler.open_and_execute()
         self._opx_handler_active = True
 
     def evaluate(self, point: Point) -> Result:
@@ -183,7 +159,6 @@ class InteractiveOPX(BaseOPX[list[Result]], Generic[Point, Result]):
     def cleanup(self):
         """Stop program and close hardware."""
         if self._opx_handler_active:
-            self._close_hardware()
+            self.opx_handler.close()
             self._opx_handler_active = False
-
-    # No execute() method - use setup() → evaluate() → cleanup() pattern
+            self._opx_context = None
