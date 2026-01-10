@@ -4,6 +4,8 @@ from __future__ import annotations
 
 from abc import ABC, abstractmethod
 
+from qutemplates.opx.handler.opx_context import OPXContext
+
 from .handler import BaseOpxHandler
 
 
@@ -32,3 +34,8 @@ class BaseOPX(ABC):
         if self._opx_handler is None:
             self._opx_handler = self.construct_opx_handler()
         return self._opx_handler
+
+    @property
+    def opx_context(self) -> OPXContext:
+        return self.opx_handler.context
+

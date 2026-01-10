@@ -9,7 +9,8 @@ import matplotlib.pyplot as plt
 from matplotlib.artist import Artist
 from matplotlib.figure import Figure
 
-from ..artefacts_registry import ArtefactRegistry
+from qutemplates.export import ArtifactKind, ArtifactRegistry
+
 from ..base import BaseOPX
 from ..constants import ExportConstants
 from ..handler import OPXContext
@@ -36,7 +37,7 @@ class SnapshotOPX(BaseOPX, Generic[T]):
         self.name = ""
         self.data: Any = None
         self.parameters: Any = None
-        self._registry = ArtefactRegistry()
+        self._registry = ArtifactRegistry()
         self._averager: Averager | None = None
         self._averager_interface: AveragerInterface | None = None
 
@@ -51,6 +52,11 @@ class SnapshotOPX(BaseOPX, Generic[T]):
     def averager_interface(self) -> AveragerInterface | None:
         """Averager interface, available after execution starts."""
         return self._averager_interface
+
+    @property
+    def artifacts(self) -> ArtifactRegistry:
+        """Access registered artifacts."""
+        return self._registry
 
     @abstractmethod
     def fetch_results(self):
@@ -90,7 +96,7 @@ class SnapshotOPX(BaseOPX, Generic[T]):
         self._registry.reset()
         self._registry.register(ExportConstants.PARAMETERS, self.parameters)
         self.pre_run()
-        self._registry.register(ExportConstants.QUA_SCRIPT, self.opx_handler.create_qua_script())
+        self._registry.register(ExportConstants.QUA_SCRIPT, self.opx_handler.create_qua_script(), kind=ArtifactKind.PY)
 
         # Open hardware and execute
         opx_context = self.opx_handler.open_and_execute()

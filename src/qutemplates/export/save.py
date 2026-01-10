@@ -1,56 +1,68 @@
-from typing import Any
+"""Save artifacts from registry to disk."""
 
-from matplotlib.figure import Figure
+from __future__ import annotations
 
-from .utils import Path, generate_unique_save_name, save_dict, save_fig, time_stamp
+from pathlib import Path
+
+from .registry import Artifact, ArtifactKind, ArtifactRegistry
+from .utils import generate_unique_save_name, save_dict, save_fig, time_stamp
+
+EXTENSION_BY_KIND = {
+    ArtifactKind.JSON: "json",
+    ArtifactKind.PY: "py",
+    ArtifactKind.FIGURE: "png",
+}
 
 
 def save_all(
-    name,
-    path,
-    data: Any | None = None,
-    figs: list[Figure] | Figure | None = None,
-    suffix: str = "",
-    date: str | None = None,
-    debug_data: str | None = None,
+    registry: ArtifactRegistry,
+    path: str | Path,
+    name: str,
+    timestamp: str | None = None,
 ) -> Path:
+    """Save all artifacts from registry to disk.
+
+    Args:
+        registry: ArtifactRegistry containing artifacts to save.
+        path: Directory path where files should be saved.
+        name: Base name for saved files.
+        timestamp: Optional timestamp string. Generated if not provided.
+
+    Returns:
+        Path to the saved data file (if any), otherwise the directory.
     """
-    Save the experiment's data and optional figures to disk.
+    timestamp = timestamp or time_stamp()
+    directory = Path(path)
+    directory.mkdir(parents=True, exist_ok=True)
 
-    :param path: Directory path where files should be saved.
-    :param figs: A list of matplotlib Figure objects to save as images.
-                 If None, no figures are saved.
-    :param save_format: Format for the experiment's data (e.g., 'json').
-    :param suffix: Optional suffix appended to the saved filenames.
-    :param save_data: If True, the experiment's data is saved; otherwise, only figures are saved.
+    saved_data_path: Path | None = None
 
-    :return: True if saved successfully, False if `self.name` is None or an error occurs.
-    """
+    for key, artifact in registry.items():
+        file_path = _save_artifact(artifact, directory, name, key, timestamp)
+        if key == "data":
+            saved_data_path = file_path
 
-    suffix = "" if suffix == "" else f"_{suffix}"
-    timestamp = date if date else time_stamp()
+    return saved_data_path or directory
 
-    # Create directory if it does not exist
-    Path(path).mkdir(parents=True, exist_ok=True)
 
-    # Save data (JSON or other format) if requested
-    path_for_data_iter = generate_unique_save_name(path, name, f"data{suffix}", timestamp, "json")
-    path_for_data = next(path_for_data_iter)
+def _save_artifact(
+    artifact: Artifact,
+    directory: Path,
+    name: str,
+    key: str,
+    timestamp: str,
+) -> Path:
+    """Save a single artifact to disk based on its kind."""
+    suffix = artifact.save_hint or key
+    extension = EXTENSION_BY_KIND[artifact.kind]
+    path_iter = generate_unique_save_name(str(directory), name, suffix, timestamp, extension)
+    file_path = next(path_iter)
 
-    # Convert experiment data into a dictionary
-    save_dict(path_for_data, data)
+    if artifact.kind == ArtifactKind.JSON:
+        save_dict(file_path, artifact.payload)
+    elif artifact.kind == ArtifactKind.PY:
+        file_path.write_text(artifact.payload)
+    elif artifact.kind == ArtifactKind.FIGURE:
+        save_fig(file_path, artifact.payload)
 
-    # Save figures if provided
-    if figs is not None:
-        if isinstance(figs, Figure):
-            figs = [figs]
-        path_for_figs_iter = generate_unique_save_name(path, name, f"plot{suffix}", timestamp, "png")
-        for fig in figs:
-            path_for_fig = next(path_for_figs_iter)
-            save_fig(path_for_fig, fig)
-
-    if debug_data:
-        path_for_debug = next(generate_unique_save_name(path, name, f"debug{suffix}", timestamp, "py"))
-        path_for_debug.write_text(debug_data)
-
-    return path_for_data
+    return file_path
