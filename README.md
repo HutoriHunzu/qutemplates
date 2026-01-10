@@ -29,6 +29,8 @@ exp = MyExperiment()
 data = exp.execute()
 ```
 
+See [Architecture Guide](docs/opx-architecture.md) for details on templates and handlers.
+
 ## Development
 
 ```bash
