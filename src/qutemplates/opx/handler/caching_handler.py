@@ -4,7 +4,8 @@ from __future__ import annotations
 
 from qm import FullQuaConfig, QuantumMachine, QuantumMachinesManager
 
-from ..context import OPXManagerAndMachine
+from ..context import OPXContext, OPXManagerAndMachine
+from ..simulation import SimulationData, simulate_program
 from .base import BaseOpxHandler
 
 
@@ -81,7 +82,40 @@ class CachingOpxHandler(BaseOpxHandler):
         self._manager_and_machine = OPXManagerAndMachine(manager=qmm, machine=machine)
         return self._manager_and_machine
 
-    def close(self, manager_and_machine: OPXManagerAndMachine | None = None) -> None:
+    def _get_execute_kwargs(self) -> dict:
+        """Get kwargs for machine.execute() from logical config."""
+        return self._logical_config or {}
+
+    def execute(self, program) -> OPXContext:
+        """Execute program with logical config kwargs."""
+        mm = self._manager_and_machine
+        job = mm.machine.execute(program, **self._get_execute_kwargs())
+        return OPXContext(
+            manager=mm.manager,
+            qm=mm.machine,
+            job=job,
+            result_handles=job.result_handles,
+        )
+
+    def simulate(
+        self,
+        program,
+        duration_cycles: int,
+        flags: list[str] | None = None,
+        simulation_interface=None,
+    ) -> SimulationData:
+        """Simulate program and return data."""
+        mm = self._manager_and_machine
+        return simulate_program(
+            mm.manager,
+            self._physical_config or self.config,
+            program,
+            duration_cycles,
+            flags or [],
+            simulation_interface,
+        )
+
+    def close(self) -> None:
         """Close machine if close_on_close is True, otherwise keep cached."""
         if not self.close_on_close:
             return

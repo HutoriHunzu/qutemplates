@@ -4,19 +4,18 @@ from __future__ import annotations
 
 from qm import FullQuaConfig, QuantumMachinesManager
 
-from ..context import OPXManagerAndMachine
+from ..context import OPXContext, OPXManagerAndMachine
+from ..simulation import SimulationData, simulate_program
 from .base import BaseOpxHandler
 
 
 class DefaultOpxHandler(BaseOpxHandler):
     """Default OPX handler with shared QMM per IP address.
 
-    Standard implementation for most experiments. Caches QMM per IP to
-    avoid reconnection overhead. Override create_qmm() for custom manager
-    creation (e.g., with Octave).
+    Caches QMM per IP to avoid reconnection overhead.
+    Override create_qmm() for custom manager creation (e.g., with Octave).
     """
 
-    # Class-level: Shared QMMs per IP address
     _ip_to_manager: dict[str, QuantumMachinesManager] = {}
 
     def __init__(self, opx_metadata, config: FullQuaConfig):
@@ -46,9 +45,37 @@ class DefaultOpxHandler(BaseOpxHandler):
         self._manager_and_machine = OPXManagerAndMachine(manager=qmm, machine=qm)
         return self._manager_and_machine
 
-    def close(self, manager_and_machine: OPXManagerAndMachine | None = None) -> None:
-        """Close the QuantumMachine. Uses stored connection if None."""
-        mm = manager_and_machine or self._manager_and_machine
-        if mm is not None:
-            mm.machine.close()
+    def execute(self, program) -> OPXContext:
+        """Execute program and return context."""
+        mm = self._manager_and_machine
+        job = mm.machine.execute(program)
+        return OPXContext(
+            manager=mm.manager,
+            qm=mm.machine,
+            job=job,
+            result_handles=job.result_handles,
+        )
+
+    def simulate(
+        self,
+        program,
+        duration_cycles: int,
+        flags: list[str] | None = None,
+        simulation_interface=None,
+    ) -> SimulationData:
+        """Simulate program and return data."""
+        mm = self._manager_and_machine
+        return simulate_program(
+            mm.manager,
+            self.config,
+            program,
+            duration_cycles,
+            flags or [],
+            simulation_interface,
+        )
+
+    def close(self) -> None:
+        """Close the QuantumMachine."""
+        if self._manager_and_machine is not None:
+            self._manager_and_machine.machine.close()
             self._manager_and_machine = None

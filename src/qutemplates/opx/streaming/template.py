@@ -16,6 +16,7 @@ from ..constants import ExportConstants
 from ..handler import OPXContext
 from ..simulation import SimulationData
 from ..averager import Averager, AveragerInterface
+from ..utils import ns_to_clock_cycles
 from .interface import StreamingInterface
 from .solver import StreamingStrategy, solve_strategy
 
@@ -85,12 +86,15 @@ class StreamingOPX(BaseOPX, Generic[T]):
         self.pre_run()
         self._registry.register(ExportConstants.QUA_SCRIPT, self.create_qua_script())
 
-        opx_context = self.execute_program()
+        # Explicit lifecycle: open -> execute -> workflow -> close
+        self.opx_handler.open()
+        prog = self._build_program()
+        self._context = self.opx_handler.execute(prog)
 
         if self._averager is not None:
-            self._averager_interface = self.averager.generate_interface(opx_context.result_handles)
+            self._averager_interface = self.averager.generate_interface(self._context.result_handles)
 
-        interface = self._create_streaming_interface(opx_context)
+        interface = self._create_streaming_interface(self._context)
         workflow = solve_strategy(strategy, interface)
 
         if not workflow.empty:
@@ -104,7 +108,7 @@ class StreamingOPX(BaseOPX, Generic[T]):
             self.data = self.post_run(raw_data)
 
         self._registry.register(ExportConstants.DATA, self.data)
-        self.close()
+        self.opx_handler.close()
 
         return self.data
 
@@ -125,7 +129,14 @@ class StreamingOPX(BaseOPX, Generic[T]):
         if not_strict_timing:
             flags.append("not-strict-timing")
 
-        data = self._run_simulation(duration_ns, flags, simulation_interface)
+        # Explicit lifecycle: open -> simulate -> close
+        self.opx_handler.open()
+        try:
+            prog = self._build_program()
+            duration_cycles = ns_to_clock_cycles(duration_ns)
+            data = self.opx_handler.simulate(prog, duration_cycles, flags, simulation_interface)
+        finally:
+            self.opx_handler.close()
 
         if debug_path:
             with open(debug_path, "w") as f:

@@ -6,46 +6,43 @@ from abc import ABC, abstractmethod
 
 from qm import FullQuaConfig
 
-from ..context import OPXManagerAndMachine
+from ..context import OPXContext, OPXManagerAndMachine
+from ..simulation import SimulationData
 
 
 class BaseOpxHandler(ABC):
     """Abstract base class for OPX hardware handlers.
 
-    Handlers manage hardware lifecycle only: open() and close().
-    Execution and simulation logic lives in BaseOPX.
+    Handlers manage the full hardware lifecycle: open, execute/simulate, close.
     """
 
     @abstractmethod
     def __init__(self, opx_metadata, config: FullQuaConfig):
-        """Initialize handler with metadata and config.
-
-        Args:
-            opx_metadata: Connection details (host, port, cluster name).
-            config: QUA configuration dictionary.
-        """
+        """Initialize handler with metadata and config."""
         pass
 
     @abstractmethod
     def open(self) -> OPXManagerAndMachine:
-        """Open connection to quantum hardware.
-
-        Returns:
-            OPXManagerAndMachine: Tuple-like object with manager and machine.
-
-        Raises:
-            OpenQmException: If hardware connection fails.
-        """
+        """Open connection to quantum hardware."""
         pass
 
     @abstractmethod
-    def close(self, manager_and_machine: OPXManagerAndMachine | None = None) -> None:
-        """Close connection to quantum hardware.
+    def execute(self, program) -> OPXContext:
+        """Execute program and return context. Call open() first."""
+        pass
 
-        Args:
-            manager_and_machine: Connection to close. If None, uses stored connection.
+    @abstractmethod
+    def simulate(
+        self,
+        program,
+        duration_cycles: int,
+        flags: list[str] | None = None,
+        simulation_interface=None,
+    ) -> SimulationData:
+        """Simulate program and return data. Call open() first."""
+        pass
 
-        Raises:
-            QmFailedToCloseQuantumMachineError: If close fails.
-        """
+    @abstractmethod
+    def close(self) -> None:
+        """Close connection to quantum hardware."""
         pass
