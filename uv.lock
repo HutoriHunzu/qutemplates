@@ -1216,8 +1216,8 @@ wheels = [
 
 [[package]]
 name = "quflow"
-version = "0.2.0"
-source = { git = "https://github.com/HutoriHunzu/quflow.git#364490d1e5b0ce2e0e2750a22bd376e4f2639eda" }
+version = "0.3.0"
+source = { git = "https://github.com/HutoriHunzu/quflow.git#fc8cf2ecf6045dbb88122e7a68948398b477a8ab" }
 dependencies = [
     { name = "matplotlib" },
     { name = "pydantic" },
@@ -1226,7 +1226,7 @@ dependencies = [
 
 [[package]]
 name = "qutemplates"
-version = "0.2.0"
+version = "0.3.0"
 source = { editable = "." }
 dependencies = [
     { name = "matplotlib" },
