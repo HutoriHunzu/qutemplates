@@ -9,17 +9,15 @@ experiment-level orchestration. This separation allows:
 - Direct access to simulation without experiment workflow
 """
 
-# from .averager import Averager, AveragerInterface
+from ..context import OPXContext, OPXManagerAndMachine
 from .base import BaseOpxHandler
+from .caching_handler import CachingOpxHandler
 from .default_handler import DefaultOpxHandler
-from .opx_context import OPXContext, OPXManagerAndMachine
 
 __all__ = [
-    "OPXContext",
     "BaseOpxHandler",
+    "CachingOpxHandler",
     "DefaultOpxHandler",
     "OPXContext",
     "OPXManagerAndMachine",
-    # "Averager",
-    # "AveragerInterface",
 ]

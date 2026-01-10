@@ -1,4 +1,4 @@
-# Streaming experiment: incremental chunk semantics
+"""Streaming template: incremental chunk-based data fetching."""
 
 from __future__ import annotations
 
@@ -15,7 +15,7 @@ from ..base import BaseOPX
 from ..constants import ExportConstants
 from ..handler import OPXContext
 from ..simulation import SimulationData
-from ..tools import Averager, AveragerInterface
+from ..averager import Averager, AveragerInterface
 from .interface import StreamingInterface
 from .solver import StreamingStrategy, solve_strategy
 
@@ -50,13 +50,9 @@ class StreamingOPX(BaseOPX, Generic[T]):
         """Averager interface, available after execution starts."""
         return self._averager_interface
 
-    # Abstract - user must implement
-
     @abstractmethod
     def program_coordinator(self, job, result_handles, output_queue: Queue):
         """User controls fetch loop. Called ONCE by framework. Writes chunks to queue."""
-
-    # Optional - user can override
 
     def get_aggregated_data(self) -> Any:
         """Return aggregated data from coordinator. Optional - for testing."""
@@ -72,13 +68,11 @@ class StreamingOPX(BaseOPX, Generic[T]):
 
     def setup_plot(self) -> tuple[Figure, list[Artist]]:
         """Setup plot for live animation."""
-        pass
+        raise NotImplementedError
 
     def update_plot(self, artists: list[Artist], data: T) -> list[Artist]:
         """Update plot with new data."""
         return artists
-
-    # Execution
 
     def execute(
         self,
@@ -86,23 +80,17 @@ class StreamingOPX(BaseOPX, Generic[T]):
         show_execution_graph: bool = False,
     ) -> T:
         """Execute streaming experiment with workflow."""
-        # Setup
         self._registry.reset()
         self._registry.register(ExportConstants.PARAMETERS, self.parameters)
         self.pre_run()
-        self._registry.register(ExportConstants.QUA_SCRIPT, self.opx_handler.create_qua_script())
+        self._registry.register(ExportConstants.QUA_SCRIPT, self.create_qua_script())
 
-        # Open hardware and execute
-        opx_context = self.opx_handler.open_and_execute()
+        opx_context = self.execute_program()
 
-        # Load averager interface if averager is used
-        averager_interface = None
         if self._averager is not None:
-            averager_interface = self.averager.generate_interface(opx_context.result_handles)
-            self._averager_interface = averager_interface
+            self._averager_interface = self.averager.generate_interface(opx_context.result_handles)
 
-        # Build and execute workflow
-        interface = self._create_streaming_interface(opx_context, averager_interface)
+        interface = self._create_streaming_interface(opx_context)
         workflow = solve_strategy(strategy, interface)
 
         if not workflow.empty:
@@ -111,13 +99,12 @@ class StreamingOPX(BaseOPX, Generic[T]):
                 plt.show()
             workflow.execute()
 
-        # Get aggregated data and post-process
         raw_data = self.get_aggregated_data()
         if raw_data is not None:
             self.data = self.post_run(raw_data)
 
         self._registry.register(ExportConstants.DATA, self.data)
-        self.opx_handler.close()
+        self.close()
 
         return self.data
 
@@ -138,21 +125,15 @@ class StreamingOPX(BaseOPX, Generic[T]):
         if not_strict_timing:
             flags.append("not-strict-timing")
 
-        data = self.opx_handler.open_and_simulate(duration_ns, flags, simulation_interface)
+        data = self._run_simulation(duration_ns, flags, simulation_interface)
 
         if debug_path:
             with open(debug_path, "w") as f:
-                f.write(self.opx_handler.create_qua_script())
+                f.write(self.create_qua_script())
 
         return data
 
-    # Internal
-
-    def _create_streaming_interface(
-        self,
-        opx_context: OPXContext,
-        averager_interface: AveragerInterface | None,
-    ) -> StreamingInterface:
+    def _create_streaming_interface(self, opx_context: OPXContext) -> StreamingInterface:
         """Create interface for workflow."""
         return StreamingInterface(
             program_coordinator=self.program_coordinator,
@@ -161,5 +142,5 @@ class StreamingOPX(BaseOPX, Generic[T]):
             update_plot=self.update_plot,
             experiment_name=self.name,
             opx_context=opx_context,
-            averager_interface=averager_interface,
+            averager_interface=self._averager_interface,
         )

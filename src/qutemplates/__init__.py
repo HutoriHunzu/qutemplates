@@ -1,6 +1,7 @@
 # from .base import Template
 from .export import save_all
 from .opx import (
+    CachingOpxHandler,
     DefaultOpxHandler,
     # InteractiveOPX,
     OPXContext,
@@ -13,6 +14,7 @@ __all__ = [
     # "StreamingOPX",
     # "InteractiveOPX",
     "OPXContext",
+    "CachingOpxHandler",
     "DefaultOpxHandler",
     "save_all",
 ]

@@ -3,6 +3,7 @@
 # Import new names
 from .handler import (
     BaseOpxHandler,
+    CachingOpxHandler,
     DefaultOpxHandler,
     OPXContext,
 )
@@ -18,5 +19,6 @@ __all__ = [
     # "InteractiveOPX",
     "OPXContext",
     "BaseOpxHandler",
+    "CachingOpxHandler",
     "DefaultOpxHandler",
 ]

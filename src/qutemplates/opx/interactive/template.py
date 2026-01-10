@@ -7,7 +7,7 @@ from collections.abc import Iterable
 from typing import Generic, TypeVar
 
 from ..base import BaseOPX
-from ..handler import BaseOpxHandler, OPXContext
+from ..handler import OPXContext
 
 # Two type parameters: Point (input) and Result (output)
 Point = TypeVar("Point")

@@ -15,7 +15,7 @@ from ..base import BaseOPX
 from ..constants import ExportConstants
 from ..handler import OPXContext
 from ..simulation import SimulationData
-from ..tools import Averager, AveragerInterface
+from ..averager import Averager, AveragerInterface
 from .interface import LivePlottingInterface, SnapshotInterface
 from .solver import SnapshotStrategy, solve_strategy
 
@@ -79,11 +79,8 @@ class SnapshotOPX(BaseOPX, Generic[T]):
         raise NotImplementedError
 
     def plot(self, data: T) -> Figure:
-        figure_and_artists = self.setup_plot()
-        if figure_and_artists is None:
-            raise ValueError("Please implement setup plot")
-        fig, artists = figure_and_artists
-        _ = self.update_plot(artists, data)
+        fig, artists = self.setup_plot()
+        self.update_plot(artists, data)
         return fig
 
     def execute(
@@ -97,11 +94,11 @@ class SnapshotOPX(BaseOPX, Generic[T]):
         self._registry.register(ExportConstants.PARAMETERS, self.parameters)
         self.pre_run()
         self._registry.register(
-            ExportConstants.QUA_SCRIPT, self.opx_handler.create_qua_script(), kind=ArtifactKind.PY
+            ExportConstants.QUA_SCRIPT, self.create_qua_script(), kind=ArtifactKind.PY
         )
 
         # Open hardware and execute
-        opx_context = self.opx_handler.open_and_execute()
+        opx_context = self.execute_program()
 
         # Build and execute workflow
         interface = self._create_interface(opx_context)
@@ -117,7 +114,7 @@ class SnapshotOPX(BaseOPX, Generic[T]):
         raw_data = self.fetch_results()
         self.data = self.post_run(raw_data)
         self._registry.register(ExportConstants.DATA, self.data)
-        self.opx_handler.close()
+        self.close()
 
         return self.data
 
@@ -149,26 +146,23 @@ class SnapshotOPX(BaseOPX, Generic[T]):
         if not_strict_timing:
             flags.append("not-strict-timing")
 
-        data = self.opx_handler.open_and_simulate(duration_ns, flags, simulation_interface)
+        data = self._run_simulation(duration_ns, flags, simulation_interface)
 
         if debug_path:
             with open(debug_path, "w") as f:
-                f.write(self.opx_handler.create_qua_script())
+                f.write(self.create_qua_script())
 
         return data
 
     def _create_interface(self, opx_context: OPXContext) -> SnapshotInterface:
         """Create snapshot interface with all required components."""
-        # Load averager interface if averager is used
-        averager_interface = None
         if self._averager is not None:
-            averager_interface = self.averager.generate_interface(opx_context.result_handles)
-            self._averager_interface = averager_interface
+            self._averager_interface = self.averager.generate_interface(opx_context.result_handles)
 
         live_plotting_interface = LivePlottingInterface(
             setup_plot=self.setup_plot,
             update_plot=self.update_plot,
-            averager_interface=averager_interface,
+            averager_interface=self._averager_interface,
         )
 
         return SnapshotInterface(
@@ -176,6 +170,6 @@ class SnapshotOPX(BaseOPX, Generic[T]):
             post_run=self.post_run,
             experiment_name=self.name,
             opx_context=opx_context,
-            averager_interface=averager_interface,
+            averager_interface=self._averager_interface,
             live_plotting=live_plotting_interface,
         )
