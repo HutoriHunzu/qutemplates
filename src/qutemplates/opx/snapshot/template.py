@@ -9,6 +9,7 @@ from typing import Any, Generic, TypeVar
 import matplotlib.pyplot as plt
 from matplotlib.artist import Artist
 from matplotlib.figure import Figure
+from quflow import Status
 
 from qutemplates.export import ArtifactKind, ArtifactRegistry, save
 
@@ -38,6 +39,7 @@ class SnapshotOPX(BaseOPX, Generic[T]):
         self.name = ""
         self.data: Any = None
         self.parameters: Any = None
+        self.status: Status = Status.PENDING
         self._registry = ArtifactRegistry()
         self._averager: Averager | None = None
         self._averager_interface: AveragerInterface | None = None
@@ -93,6 +95,7 @@ class SnapshotOPX(BaseOPX, Generic[T]):
         show_execution_graph: bool = False,
         debug_script_path: Path | str | None = None,
     ) -> T:
+        self.status = Status.RUNNING
         """Execute snapshot experiment with workflow."""
         # Setup
         self.artifacts.reset()
@@ -126,12 +129,16 @@ class SnapshotOPX(BaseOPX, Generic[T]):
                 workflow.visualize()
                 plt.show()
             workflow.execute()
+            self.status = Status.FINISHED
 
         # Final fetch, process, and close
         raw_data = self.fetch_results()
         self.data = self.post_run(raw_data)
         self.artifacts.register(ExportConstants.DATA, self.data)
         self.opx_handler.close()
+
+        if self.status is Status.RUNNING:
+            self.status = Status.FINISHED
 
         return self.data
 

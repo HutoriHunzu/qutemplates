@@ -24,6 +24,7 @@ dir_path = pathlib.Path(__file__).parent.absolute()
 RESOURCES = dir_path / "resources"
 STOP_ICON = plt.imread(str(RESOURCES / "stop_icon.png"))
 SAVE_ICON = plt.imread(str(RESOURCES / "save_icon.png"))
+REJECT_ICON = plt.imread(str(RESOURCES / "reject_icon.png"))
 
 T = TypeVar("T")
 
@@ -107,13 +108,16 @@ class LiveAnimationTask(Task):
         self._context: TaskContext | None = None
 
         # UI elements
+        self._buttons: list[Button] = []
         self._stop_button = None
         self._continue_button = None
         self._text_artist_for_avg = None
 
     @property
-    def context(self):
+    def context(self) -> TaskContext:
         """Get the task execution context."""
+        if self._context is None:
+            raise ValueError('Please make sure the run set the context correctly')
         return self._context
 
     def update_average(self) -> tuple:
@@ -172,8 +176,10 @@ class LiveAnimationTask(Task):
             self._text_artist_for_avg = self._setup_averager_artist()
 
         # Add control buttons
+        self._buttons = []
         self.add_stop_button()
         self.add_continue_button()
+        self.add_reject_button()
 
     def execute(self):
         """
@@ -211,8 +217,6 @@ class LiveAnimationTask(Task):
         self.setup()
         self.execute()
 
-        return Status.FINISHED
-
     def stop_from_button(self):
         """Stop animation and close figure (called from button click)."""
         # Stop the animation's event source
@@ -229,21 +233,37 @@ class LiveAnimationTask(Task):
 
     def continue_when_button_pressed(self, event):
         """Handler for continue/save button click."""
+        self.context.status = Status.STOPPED
+        self.stop_from_button()
+
+    def reject_when_button_pressed(self, event):
+        """Handler for continue/save button click."""
+        self.context.status = Status.REJECT
         self.stop_from_button()
 
     def add_stop_button(self):
         """Add stop button to the figure."""
         ax_stop = self.figure.add_axes([0.1, 0.9, 0.08, 0.08])
         ax_stop.set_axis_off()
-        self._stop_button = Button(ax_stop, "", image=STOP_ICON)
-        self._stop_button.on_clicked(self.stop_when_button_pressed)
+        button = Button(ax_stop, "", image=STOP_ICON)
+        button.on_clicked(self.stop_when_button_pressed)
+        self._buttons.append(button)
 
     def add_continue_button(self):
         """Add continue/save button to the figure."""
         ax_continue = self.figure.add_axes([0.9, 0.9, 0.08, 0.08])
         ax_continue.set_axis_off()
-        self._continue_button = Button(ax_continue, "", image=SAVE_ICON)
-        self._continue_button.on_clicked(self.continue_when_button_pressed)
+        button = Button(ax_continue, "", image=SAVE_ICON)
+        button.on_clicked(self.continue_when_button_pressed)
+        self._buttons.append(button)
+
+
+    def add_reject_button(self) -> tuple[list[AXES], list[Button]]:
+        ax_continue = self.figure.add_axes([0.12, 0.9, 0.08, 0.08])
+        ax_continue.set_axis_off()
+        button = Button(ax_continue, "", image=REJECT_ICON)
+        button.on_clicked(self.reject_when_button_pressed)
+        self._buttons.append(button)
 
     def step(self, frame):
         """
