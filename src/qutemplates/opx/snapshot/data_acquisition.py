@@ -13,11 +13,11 @@ from quflow import (
     create_single_item_channel,
 )
 
-from ..experiment_interface import ExperimentInterface
 from ..shared.node_names import OPXNodeName
+from .interface import SnapshotInterface
 
 
-def create_fetch_post_skeleton(flow: Workflow, interface: ExperimentInterface) -> ParallelNode:
+def create_fetch_post_skeleton(flow: Workflow, interface: SnapshotInterface) -> ParallelNode:
     """
     Create FETCH → POST pipeline using ConditionPollingTasks.
 
