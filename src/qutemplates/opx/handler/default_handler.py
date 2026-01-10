@@ -1,4 +1,4 @@
-"""Default OPX hardware handler implementation."""
+"""Default OPX handler with shared QMM per IP address."""
 
 from __future__ import annotations
 
@@ -16,38 +16,14 @@ from .opx_context import OPXContext, OPXManagerAndMachine
 
 
 class DefaultOpxHandler(BaseOpxHandler):
-    """Default OPX hardware handler implementation.
+    """Default OPX handler with shared QMM per IP address.
 
-    Features:
-    - Shared QMM per IP address (class-level caching)
-    - Standard QM lifecycle
+    Standard implementation for most experiments. Features:
+    - QMM caching per IP (avoids reconnection overhead)
     - Program building from callable
-    - Support for both execution and simulation
+    - Full execution and simulation support
 
-    State Management:
-    - QMM: Shared per IP address via class-level dict
-    - Config: Stored at construction time
-    - Program callable: Stored at construction time
-    - Context: Created after execute(), available via context property
-
-    Extensibility:
-    - Override create_qmm() for custom manager creation (e.g., with octave)
-    - Override open() for custom QM opening logic
-    - Override close() for custom closing logic (e.g., keep-alive)
-
-    Example - Basic usage:
-        >>> handler = DefaultOpxHandler(metadata, config, my_program)
-        >>> mm = handler.open()
-        >>> ctx = handler.execute(mm)
-        >>> data = ctx.result_handles.get('I').fetch_all()
-        >>> handler.close()
-
-    Example - Custom keep-alive:
-        >>> class KeepOpenHandler(DefaultOpxHandler):
-        ...     def close(self):
-        ...         if not self.auto_close:
-        ...             return
-        ...         super().close()
+    Override create_qmm() for custom manager creation (e.g., with Octave).
     """
 
     # Class-level: Shared QMMs per IP address
@@ -70,6 +46,7 @@ class DefaultOpxHandler(BaseOpxHandler):
         self.config = config
         self.program_callable = program_callable
         self._context: OPXContext | None = None
+        self._manager_and_machine: OPXManagerAndMachine | None = None
 
     def get_or_create_qmm(self) -> QuantumMachinesManager:
         """Get or create QuantumMachinesManager for this IP address.
@@ -143,27 +120,25 @@ class DefaultOpxHandler(BaseOpxHandler):
             manager_and_machine: Opened hardware connection from open().
 
         Returns:
-            OPXContext with job, result handles, and debug script.
+            OPXContext: Context with job and result handles.
         """
-        manager, machine = manager_and_machine.manager, manager_and_machine.machine
-
-        # Build program
         prog = self._build_program()
+        job = manager_and_machine.machine.execute(prog)
 
-        # Execute
-        job = machine.execute(prog)
-
-        # Create and store context
         self._context = OPXContext(
-            manager=manager,
-            qm=machine,
+            manager=manager_and_machine.manager,
+            qm=manager_and_machine.machine,
             job=job,
             result_handles=job.result_handles,
         )
-
         return self._context
 
-    def create_qua_scirpt(self) -> str:
+    def create_qua_script(self) -> str:
+        """Generate QUA script string from the program.
+
+        Returns:
+            QUA script as a string for debugging or inspection.
+        """
         return generate_qua_script(self._build_program(), self.config)
 
     def simulate(
@@ -182,12 +157,9 @@ class DefaultOpxHandler(BaseOpxHandler):
             simulation_interface: Optional QM simulation interface.
 
         Returns:
-            Simulation data from QM simulator.
+            SimulationData: Results from QM simulator.
         """
-        # Build program
         prog = self._build_program()
-
-        # Convert duration and run simulation
         duration_cycles = ns_to_clock_cycles(duration_ns)
 
         return simulate_program(
@@ -199,15 +171,21 @@ class DefaultOpxHandler(BaseOpxHandler):
             simulation_interface
         )
 
-    def close(self, manager_and_machine: OPXManagerAndMachine) -> None:
+    def close(self, manager_and_machine: OPXManagerAndMachine | None = None) -> None:
         """Close the current QuantumMachine.
+
+        Args:
+            manager_and_machine: Connection to close. If None, uses stored connection.
 
         Override to customize closing behavior (e.g., keep-open logic).
 
         Raises:
             QmFailedToCloseQuantumMachineError: If QM fails to close.
         """
-        manager_and_machine.machine.close()
+        mm = manager_and_machine or self._manager_and_machine
+        if mm is not None:
+            mm.machine.close()
+            self._manager_and_machine = None
 
     @property
     def context(self) -> OPXContext:

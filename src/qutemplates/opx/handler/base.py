@@ -1,4 +1,4 @@
-"""Base abstract class for OPX hardware handlers."""
+"""Abstract handler for OPX hardware lifecycle."""
 
 from __future__ import annotations
 
@@ -15,37 +15,20 @@ class BaseOpxHandler(ABC):
     """Abstract base class for OPX hardware handlers.
 
     Handlers manage access to quantum hardware with two workflows:
-    - Execution: open() → execute() → close()
-    - Simulation: open() → simulate() → close()
+    - Execution: open() -> execute() -> close()
+    - Simulation: open() -> simulate() -> close()
 
     The program callable is provided at construction time, enabling handler
     reuse and separation of program definition from execution.
 
-    Responsibilities:
-        - Device connection lifecycle (open/close)
-        - Program building from callable
-        - Program execution on hardware
-        - Program simulation (without hardware)
-        - Context generation and management
+    Convenience methods open_and_execute() and open_and_simulate() are provided
+    for simpler usage patterns.
 
-    Extensibility:
-        Subclass to customize behavior for different hardware configurations,
-        simulation modes, or lifecycle patterns (e.g., keep-alive, multi-machine).
-
-    Example - Basic usage:
-        >>> handler = DefaultOpxHandler(metadata, config, my_program)
-        >>> mm = handler.open()
-        >>> ctx = handler.execute(mm)
-        >>> data = ctx.result_handles.get('I').fetch_all()
-        >>> handler.close()
-
-    Example - Custom keep-alive handler:
-        >>> class KeepAliveHandler(DefaultOpxHandler):
-        ...     def close(self):
-        ...         if self.keep_alive:
-        ...             return  # Skip closing
-        ...         super().close()
+    Attributes:
+        _manager_and_machine: Stored connection for convenience methods.
     """
+
+    _manager_and_machine: OPXManagerAndMachine | None = None
 
     @abstractmethod
     def __init__(
@@ -89,7 +72,12 @@ class BaseOpxHandler(ABC):
         pass
 
     @abstractmethod
-    def create_qua_scirpt(self) -> str:
+    def create_qua_script(self) -> str:
+        """Generate QUA script string from the program.
+
+        Returns:
+            QUA script as a string for debugging or inspection.
+        """
         pass
 
     @abstractmethod
@@ -109,16 +97,61 @@ class BaseOpxHandler(ABC):
             simulation_interface: Optional QM simulation interface.
 
         Returns:
-            Simulation data from QM simulator.
+            SimulationData: Results from QM simulator.
         """
         pass
 
     @abstractmethod
-    def close(self, manager_and_machine: OPXManagerAndMachine) -> None:
+    def close(self, manager_and_machine: OPXManagerAndMachine | None = None) -> None:
         """Close connection to quantum hardware.
+
+        Args:
+            manager_and_machine: Connection to close. If None, uses stored connection.
 
         Raises:
             QmFailedToCloseQuantumMachineError: If close fails.
         """
         pass
+
+    @property
+    @abstractmethod
+    def context(self) -> OPXContext:
+        """Current execution context. Available after execute() or open_and_execute()."""
+        pass
+
+    def open_and_execute(self) -> OPXContext:
+        """Open hardware, execute program, and return context.
+
+        Convenience method that manages OPXManagerAndMachine internally.
+        The context is stored and accessible via the context property.
+
+        Returns:
+            OPXContext: Execution context with job and result handles.
+        """
+        self._manager_and_machine = self.open()
+        return self.execute(self._manager_and_machine)
+
+    def open_and_simulate(
+        self,
+        duration_ns: int,
+        flags: list[str] | None = None,
+        simulation_interface=None
+    ) -> SimulationData:
+        """Open hardware, simulate program, close connection, and return data.
+
+        Convenience method that handles the full simulation lifecycle.
+
+        Args:
+            duration_ns: Simulation duration in nanoseconds.
+            flags: Optional simulation flags.
+            simulation_interface: Optional QM simulation interface.
+
+        Returns:
+            SimulationData: Results from QM simulator.
+        """
+        mm = self.open()
+        try:
+            return self.simulate(mm, duration_ns, flags, simulation_interface)
+        finally:
+            self.close(mm)
 
