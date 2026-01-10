@@ -34,7 +34,7 @@ CleanupFuncType = Callable[[tuple[Figure, list[Artist]]], None]
 UpdateFuncType = Callable[[list[Artist], T], list[Artist]]
 
 
-BTN_SIZE_IN = 0.45   # physical size in inches -> consistent on screen
+BTN_SIZE_IN = 1   # physical size in inches -> consistent on screen
 BTN_Y = 0.90
 BTN_MARGIN = 0.02
 
