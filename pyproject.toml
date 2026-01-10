@@ -3,6 +3,7 @@ name = "qutemplates"
 version = "0.3.0"
 description = "Experiment templates for Quantum Machines OPX hardware"
 readme = "README.md"
+license = "MIT"
 authors = [
     { name = "Uri Goldblatt", email = "uri.goldblatt@gmail.com" }
 ]
