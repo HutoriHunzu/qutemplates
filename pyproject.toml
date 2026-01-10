@@ -10,7 +10,7 @@ requires-python = ">=3.11"
 dependencies = [
     "qm-qua>=1.2.4a1",
     "tqdm",
-    "quflow>=0.3.0",
+    "quflow>=0.3.1",
     "PyQt6",
     "matplotlib",
     "pycaddy>=0.2.0"
