@@ -34,7 +34,7 @@ CleanupFuncType = Callable[[tuple[Figure, list[Artist]]], None]
 UpdateFuncType = Callable[[list[Artist], T], list[Artist]]
 
 
-BTN_SIZE_IN = 0.8   # physical size in inches -> consistent on screen
+BTN_SIZE_IN = 0.8  # physical size in inches -> consistent on screen
 BTN_Y = 0.90
 BTN_MARGIN = 0.02
 
@@ -247,40 +247,17 @@ class LiveAnimationTask(Task):
 
     def stop_when_button_pressed(self, event):
         """Handler for stop button click."""
+        self.context.status = Status.STOPPED
         self.stop_from_button()
 
     def continue_when_button_pressed(self, event):
         """Handler for continue/save button click."""
-        self.context.status = Status.STOPPED
         self.stop_from_button()
 
     def reject_when_button_pressed(self, event):
         """Handler for continue/save button click."""
         self.context.status = Status.REJECT
         self.stop_from_button()
-
-    # def add_stop_button(self):
-    #     """Add stop button to the figure."""
-    #     ax_stop = self.figure.add_axes((0.1, 0.9, 0.08, 0.08))
-    #     ax_stop.set_axis_off()
-    #     button = Button(ax_stop, "", image=STOP_ICON)
-    #     button.on_clicked(self.stop_when_button_pressed)
-    #     self._buttons.append(button)
-
-    # def add_continue_button(self):
-    #     """Add continue/save button to the figure."""
-    #     ax_continue = self.figure.add_axes((0.9, 0.9, 0.08, 0.08))
-    #     ax_continue.set_axis_off()
-    #     button = Button(ax_continue, "", image=SAVE_ICON)
-    #     button.on_clicked(self.continue_when_button_pressed)
-    #     self._buttons.append(button)
-
-    # def add_reject_button(self):
-    #     ax_continue = self.figure.add_axes((0.12, 0.9, 0.08, 0.08))
-    #     ax_continue.set_axis_off()
-    #     button = Button(ax_continue, "", image=REJECT_ICON)
-    #     button.on_clicked(self.reject_when_button_pressed)
-    #     self._buttons.append(button)
 
     def _add_icon_button(self, x, icon, callback):
         fig = self.figure
