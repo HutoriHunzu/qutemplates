@@ -46,3 +46,7 @@ class BaseOpxHandler(ABC):
     def close(self) -> None:
         """Close connection to quantum hardware."""
         pass
+
+    @abstractmethod
+    def generate_qua_script(self, program) -> str:
+        pass

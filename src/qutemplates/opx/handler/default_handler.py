@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from qm import FullQuaConfig, QuantumMachinesManager
+from qm import FullQuaConfig, QuantumMachinesManager, generate_qua_script
 
 from ..context import OPXContext, OPXManagerAndMachine
 from ..simulation import SimulationData, simulate_program
@@ -79,3 +79,7 @@ class DefaultOpxHandler(BaseOpxHandler):
         if self._manager_and_machine is not None:
             self._manager_and_machine.machine.close()
             self._manager_and_machine = None
+
+
+    def generate_qua_script(self, program) -> str:
+        return generate_qua_script(program, self.config)

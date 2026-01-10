@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from qm import FullQuaConfig, QuantumMachine, QuantumMachinesManager
+from qm import FullQuaConfig, QuantumMachine, QuantumMachinesManager, generate_qua_script
 
 from ..context import OPXContext, OPXManagerAndMachine
 from ..simulation import SimulationData, simulate_program
@@ -123,4 +123,7 @@ class CachingOpxHandler(BaseOpxHandler):
         if self._cache_key and self._cache_key in self._cache:
             machine = self._cache.pop(self._cache_key)
             machine.close()
-        self._manager_and_machine = None
+
+
+    def generate_qua_script(self, program) -> str:
+        return generate_qua_script(program, self.config)

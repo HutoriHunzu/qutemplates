@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from abc import ABC, abstractmethod
 
-from qm import FullQuaConfig, generate_qua_script
+from qm import FullQuaConfig
 from qm.qua import program
 
 from .context import OPXContext
@@ -50,7 +50,7 @@ class BaseOPX(ABC):
         return self._opx_context
 
     @opx_context.setter
-    def context(self, value: OPXContext):
+    def opx_context(self, value: OPXContext):
         self._opx_context = value
 
     def _build_program(self):
@@ -61,4 +61,4 @@ class BaseOPX(ABC):
 
     def create_qua_script(self) -> str:
         """Generate QUA script string from the program."""
-        return generate_qua_script(self._build_program(), self.config)
+        return self.opx_handler.generate_qua_script(self._build_program())
