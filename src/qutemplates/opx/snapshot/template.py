@@ -3,13 +3,14 @@
 from __future__ import annotations
 
 from abc import abstractmethod
+from pathlib import Path
 from typing import Any, Generic, TypeVar
 
 import matplotlib.pyplot as plt
 from matplotlib.artist import Artist
 from matplotlib.figure import Figure
 
-from qutemplates.export import ArtifactKind, ArtifactRegistry
+from qutemplates.export import ArtifactKind, ArtifactRegistry, save
 
 from ..averager import Averager, AveragerInterface
 from ..base import BaseOPX
@@ -82,6 +83,9 @@ class SnapshotOPX(BaseOPX, Generic[T]):
         fig, artists = self.setup_plot()
         self.update_plot(artists, data)
         return fig
+
+    def save_all(self, save_dir: Path, data: Any, fig: Figure):
+        save.save_all(self.artifacts, save_dir, self.name, figures=fig)
 
     def execute(
         self,
