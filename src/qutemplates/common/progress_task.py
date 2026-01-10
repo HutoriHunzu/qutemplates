@@ -7,7 +7,6 @@ operations. Polls user-provided callbacks to update the progress bar.
 
 from collections.abc import Callable
 
-from quflow.status import Status
 from quflow.tasks.base import Task, TaskContext
 from tqdm import tqdm
 
@@ -78,22 +77,27 @@ class ProgressTask(Task):
     def cleanup(self):
         if self._pbar is not None:
             self._pbar.close()
+            self._pbar = None
+
+    @property
+    def pbar(self) -> tqdm:
+        if self._pbar is None:
+            raise TypeError("trying to access progress bar without setup of pbar")
+        return self._pbar
 
     def update(self):
         # Get current progress
         # Let exceptions propagate - don't catch them
         current = self.get_current()
 
-        extra = current - self._pbar.n
+        extra = current - self.pbar.n
         if extra > 0:  # No new data - skip the post_run() and the plot up
-            self._pbar.update(extra)
+            self.pbar.update(extra)
 
-    def run(self, ctx: TaskContext) -> Status:
+    def run(self, ctx: TaskContext):
         self.setup()
 
         while not ctx.interrupt.is_set():
             self.update()
 
         self.cleanup()
-
-        return Status.FINISHED

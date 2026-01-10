@@ -14,6 +14,7 @@ import matplotlib.pyplot as plt
 from matplotlib.animation import FuncAnimation
 from matplotlib.artist import Artist
 from matplotlib.figure import Figure
+from matplotlib.text import Text
 from matplotlib.widgets import Button
 from PyQt6.QtCore import QTimer
 from quflow import Task, TaskContext
@@ -98,11 +99,11 @@ class LiveAnimationTask(Task):
         self.max_avg = max_avg
 
         # Animation state
-        self.figure: Figure | None = None
-        self.artists: list[Artist] | None = None
         self.animation = None
         self.refresh_time_ms: int = int(refresh_time_sec * 1000)
         self.exception = None
+        self._figure: Figure | None = None
+        self._artists: list[Artist] | None = None
 
         # Task context (set during run)
         self._context: TaskContext | None = None
@@ -111,13 +112,25 @@ class LiveAnimationTask(Task):
         self._buttons: list[Button] = []
         self._stop_button = None
         self._continue_button = None
-        self._text_artist_for_avg = None
+        self._text_artist_for_avg: Text | None = None
+
+    @property
+    def figure(self) -> Figure:
+        if self._figure is None:
+            raise ValueError("Trying to access figure but get None, make sure you set figure in run")
+        return self._figure
+
+    @property
+    def artists(self) -> list[Artist]:
+        if self._artists is None:
+            raise ValueError("Trying to access artists but get None, make sure you set artists in run")
+        return self._artists
 
     @property
     def context(self) -> TaskContext:
         """Get the task execution context."""
         if self._context is None:
-            raise ValueError('Please make sure the run set the context correctly')
+            raise ValueError("Please make sure the run set the context correctly")
         return self._context
 
     def update_average(self) -> tuple:
@@ -127,7 +140,7 @@ class LiveAnimationTask(Task):
         Returns:
             Tuple containing the text artist if averager is enabled, empty tuple otherwise.
         """
-        if self._text_artist_for_avg is None:
+        if self._text_artist_for_avg is None or self.current_avg_callable is None:
             return ()
 
         current_avg = self.current_avg_callable()
@@ -150,7 +163,7 @@ class LiveAnimationTask(Task):
             return "n=?/?"
         return f"n={curr_avg}/{max_avg:g}"
 
-    def _setup_averager_artist(self) -> Artist:
+    def _setup_averager_artist(self) -> Text:
         """Create text artist for displaying average counter."""
         text = self._get_averager_text_formatter()
         return self.figure.text(
@@ -169,7 +182,7 @@ class LiveAnimationTask(Task):
         Creates the figure, artists, optional averager display, and control buttons.
         """
         # Call user's setup function
-        self.figure, self.artists = self.setup_func()
+        self._figure, self._artists = self.setup_func()
 
         # Add averager text if callbacks provided
         if self.current_avg_callable is not None and self.max_avg is not None:
@@ -202,7 +215,7 @@ class LiveAnimationTask(Task):
         # Signal interrupt when animation ends
         self.context.interrupt.set()
 
-    def run(self, ctx: TaskContext) -> Status:
+    def run(self, ctx: TaskContext):
         """
         Main task execution method called by the workflow system.
 
@@ -243,7 +256,7 @@ class LiveAnimationTask(Task):
 
     def add_stop_button(self):
         """Add stop button to the figure."""
-        ax_stop = self.figure.add_axes([0.1, 0.9, 0.08, 0.08])
+        ax_stop = self.figure.add_axes((0.1, 0.9, 0.08, 0.08))
         ax_stop.set_axis_off()
         button = Button(ax_stop, "", image=STOP_ICON)
         button.on_clicked(self.stop_when_button_pressed)
@@ -251,15 +264,14 @@ class LiveAnimationTask(Task):
 
     def add_continue_button(self):
         """Add continue/save button to the figure."""
-        ax_continue = self.figure.add_axes([0.9, 0.9, 0.08, 0.08])
+        ax_continue = self.figure.add_axes((0.9, 0.9, 0.08, 0.08))
         ax_continue.set_axis_off()
         button = Button(ax_continue, "", image=SAVE_ICON)
         button.on_clicked(self.continue_when_button_pressed)
         self._buttons.append(button)
 
-
-    def add_reject_button(self) -> tuple[list[AXES], list[Button]]:
-        ax_continue = self.figure.add_axes([0.12, 0.9, 0.08, 0.08])
+    def add_reject_button(self):
+        ax_continue = self.figure.add_axes((0.12, 0.9, 0.08, 0.08))
         ax_continue.set_axis_off()
         button = Button(ax_continue, "", image=REJECT_ICON)
         button.on_clicked(self.reject_when_button_pressed)
