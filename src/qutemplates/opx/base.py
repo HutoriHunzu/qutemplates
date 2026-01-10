@@ -38,4 +38,3 @@ class BaseOPX(ABC):
     @property
     def opx_context(self) -> OPXContext:
         return self.opx_handler.context
-

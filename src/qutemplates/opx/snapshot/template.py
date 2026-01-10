@@ -96,7 +96,9 @@ class SnapshotOPX(BaseOPX, Generic[T]):
         self._registry.reset()
         self._registry.register(ExportConstants.PARAMETERS, self.parameters)
         self.pre_run()
-        self._registry.register(ExportConstants.QUA_SCRIPT, self.opx_handler.create_qua_script(), kind=ArtifactKind.PY)
+        self._registry.register(
+            ExportConstants.QUA_SCRIPT, self.opx_handler.create_qua_script(), kind=ArtifactKind.PY
+        )
 
         # Open hardware and execute
         opx_context = self.opx_handler.open_and_execute()

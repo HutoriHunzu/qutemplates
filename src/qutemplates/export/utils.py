@@ -57,7 +57,6 @@ SAVE_FUNCTION_MAPPING = {"pickle": pickle_save, "json": json_save}
 DELIMITER = "__"
 
 
-
 def convert_to_iterable(d: Any) -> Iterable[Any]:
     if not isinstance(d, Iterable):
         d = [d]
@@ -94,7 +93,6 @@ def save_array(path: str, data: dict[str, Iterable]):
 def save_fig(path: Path, fig):
     validate_file_existence(path)
     fig.savefig(path, bbox_inches="tight")
-
 
 
 def validate_file_existence(path: Path, raise_error=True):
