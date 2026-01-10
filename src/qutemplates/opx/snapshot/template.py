@@ -11,12 +11,11 @@ from matplotlib.figure import Figure
 
 from qutemplates.export import ArtifactKind, ArtifactRegistry
 
-from ..base import BaseOPX
-from ..constants import ExportConstants
-from ..handler import OPXContext
-from ..simulation import SimulationData
 from ..averager import Averager, AveragerInterface
+from ..base import BaseOPX
+from ..simulation import SimulationData
 from ..utils import ns_to_clock_cycles
+from .constants import ExportConstants
 from .interface import LivePlottingInterface, SnapshotInterface
 from .solver import SnapshotStrategy, solve_strategy
 
@@ -91,26 +90,26 @@ class SnapshotOPX(BaseOPX, Generic[T]):
     ) -> T:
         """Execute snapshot experiment with workflow."""
         # Setup
-        self._registry.reset()
-        self._registry.register(ExportConstants.PARAMETERS, self.parameters)
+        self.artifacts.reset()
+        self.artifacts.register(ExportConstants.PARAMETERS, self.parameters)
         self.pre_run()
-        self._registry.register(
+        self.artifacts.register(
             ExportConstants.QUA_SCRIPT, self.create_qua_script(), kind=ArtifactKind.PY
         )
 
         # Explicit lifecycle: open -> execute -> workflow -> close
         self.opx_handler.open()
         prog = self._build_program()
-        self._context = self.opx_handler.execute(prog)
+        self.opx_context = self.opx_handler.execute(prog)
 
         # Build averager interface if averager was used
         if self._averager is not None:
             self._averager_interface = self.averager.generate_interface(
-                self._context.result_handles
+                self.opx_context.result_handles
             )
 
         # Build and execute workflow
-        interface = self._create_interface(self._context)
+        interface = self._create_interface()
         workflow = solve_strategy(strategy, interface)
 
         if not workflow.empty:
@@ -122,7 +121,7 @@ class SnapshotOPX(BaseOPX, Generic[T]):
         # Final fetch, process, and close
         raw_data = self.fetch_results()
         self.data = self.post_run(raw_data)
-        self._registry.register(ExportConstants.DATA, self.data)
+        self.artifacts.register(ExportConstants.DATA, self.data)
         self.opx_handler.close()
 
         return self.data
@@ -170,7 +169,7 @@ class SnapshotOPX(BaseOPX, Generic[T]):
 
         return data
 
-    def _create_interface(self, opx_context: OPXContext) -> SnapshotInterface:
+    def _create_interface(self) -> SnapshotInterface:
         """Create snapshot interface with all required components."""
         live_plotting_interface = LivePlottingInterface(
             setup_plot=self.setup_plot,
@@ -182,7 +181,7 @@ class SnapshotOPX(BaseOPX, Generic[T]):
             fetch_results=self.fetch_results,
             post_run=self.post_run,
             experiment_name=self.name,
-            opx_context=opx_context,
+            opx_context=self.opx_context,
             averager_interface=self._averager_interface,
             live_plotting=live_plotting_interface,
         )
