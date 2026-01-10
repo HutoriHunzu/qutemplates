@@ -129,7 +129,7 @@ class SnapshotOPX(BaseOPX, Generic[T]):
                 workflow.visualize()
                 plt.show()
             workflow.execute()
-            self.status = Status.FINISHED
+            self.status = workflow.status
 
         # Final fetch, process, and close
         raw_data = self.fetch_results()
