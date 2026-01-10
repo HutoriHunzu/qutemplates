@@ -23,6 +23,12 @@ class DefaultOpxHandler(BaseOpxHandler):
         self.config = config
         self._manager_and_machine: OPXManagerAndMachine | None = None
 
+    @property
+    def manager_and_machine(self) -> OPXManagerAndMachine:
+        if self._manager_and_machine is None:
+            raise ValueError('Manager and machine are not set, use open first')
+        return self._manager_and_machine
+
     def get_or_create_qmm(self) -> QuantumMachinesManager:
         """Get or create QMM for this IP. Shared across handlers."""
         ip = self.opx_metadata.host_ip
@@ -38,16 +44,15 @@ class DefaultOpxHandler(BaseOpxHandler):
             cluster_name=self.opx_metadata.cluster_name,
         )
 
-    def open(self) -> OPXManagerAndMachine:
+    def open(self):
         """Open QuantumMachine with stored configuration."""
         qmm = self.get_or_create_qmm()
         qm = qmm.open_qm(self.config, close_other_machines=True)
         self._manager_and_machine = OPXManagerAndMachine(manager=qmm, machine=qm)
-        return self._manager_and_machine
 
     def execute(self, program) -> OPXContext:
         """Execute program and return context."""
-        mm = self._manager_and_machine
+        mm = self.manager_and_machine
         job = mm.machine.execute(program)
         return OPXContext(
             manager=mm.manager,
@@ -64,7 +69,7 @@ class DefaultOpxHandler(BaseOpxHandler):
         simulation_interface=None,
     ) -> SimulationData:
         """Simulate program and return data."""
-        mm = self._manager_and_machine
+        mm = self.manager_and_machine
         return simulate_program(
             mm.manager,
             self.config,
@@ -77,7 +82,7 @@ class DefaultOpxHandler(BaseOpxHandler):
     def close(self) -> None:
         """Close the QuantumMachine."""
         if self._manager_and_machine is not None:
-            self._manager_and_machine.machine.close()
+            self.manager_and_machine.machine.close()
             self._manager_and_machine = None
 
 

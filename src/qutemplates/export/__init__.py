@@ -1,5 +1,4 @@
 from .registry import Artifact, ArtifactKind, ArtifactRegistry
-from .save import save_all
-from .utils import add_time_stamp
+from .save import save_all, save_py_by_dir_or_path_with_timestamp
 
-__all__ = ["save_all", "ArtifactKind", "Artifact", "ArtifactRegistry", "add_time_stamp"]
+__all__ = ["ArtifactKind", "Artifact", "ArtifactRegistry", "save_all", "save_py_by_dir_or_path_with_timestamp"]

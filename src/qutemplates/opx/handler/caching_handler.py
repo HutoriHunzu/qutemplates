@@ -65,7 +65,13 @@ class CachingOpxHandler(BaseOpxHandler):
             cluster_name=self.opx_metadata.cluster_name,
         )
 
-    def open(self) -> OPXManagerAndMachine:
+    @property
+    def manager_and_machine(self) -> OPXManagerAndMachine:
+        if self._manager_and_machine is None:
+            raise ValueError('Manager and machine are not set, use open first')
+        return self._manager_and_machine
+
+    def open(self):
         """Open or retrieve cached QuantumMachine based on config hash."""
         self._logical_config, self._physical_config = self._split_config(self.config)
         config_hash = self._hash_config(self._physical_config)
@@ -80,7 +86,6 @@ class CachingOpxHandler(BaseOpxHandler):
             self._cache[self._cache_key] = machine
 
         self._manager_and_machine = OPXManagerAndMachine(manager=qmm, machine=machine)
-        return self._manager_and_machine
 
     def _get_execute_kwargs(self) -> dict:
         """Get kwargs for machine.execute() from logical config."""
@@ -88,7 +93,7 @@ class CachingOpxHandler(BaseOpxHandler):
 
     def execute(self, program) -> OPXContext:
         """Execute program with logical config kwargs."""
-        mm = self._manager_and_machine
+        mm = self.manager_and_machine
         job = mm.machine.execute(program, **self._get_execute_kwargs())
         return OPXContext(
             manager=mm.manager,
@@ -105,7 +110,7 @@ class CachingOpxHandler(BaseOpxHandler):
         simulation_interface=None,
     ) -> SimulationData:
         """Simulate program and return data."""
-        mm = self._manager_and_machine
+        mm = self.manager_and_machine
         return simulate_program(
             mm.manager,
             self._physical_config or self.config,

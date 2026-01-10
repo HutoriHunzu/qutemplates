@@ -10,7 +10,7 @@ import matplotlib.pyplot as plt
 from matplotlib.artist import Artist
 from matplotlib.figure import Figure
 
-from qutemplates.export import ArtifactKind, ArtifactRegistry, add_time_stamp, save
+from qutemplates.export import ArtifactKind, ArtifactRegistry, save
 
 from ..averager import Averager, AveragerInterface
 from ..base import BaseOPX
@@ -100,7 +100,8 @@ class SnapshotOPX(BaseOPX, Generic[T]):
         self.pre_run()
 
         if debug_script_path:
-            add_time_stamp(Path(debug_script_path)).write_text(self.create_qua_script())
+            save.save_py_by_dir_or_path_with_timestamp(debug_script_path, self.create_qua_script(),
+                                                       'debug', 'py')
 
         self.artifacts.register(
             ExportConstants.QUA_SCRIPT, self.create_qua_script(), kind=ArtifactKind.PY

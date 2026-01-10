@@ -7,7 +7,7 @@ from pathlib import Path
 from matplotlib.figure import Figure
 
 from .registry import ArtifactKind, ArtifactRegistry
-from .utils import generate_unique_save_name, save_dict, save_fig, time_stamp
+from .utils import add_time_stamp, generate_unique_save_name, save_dict, save_fig, time_stamp
 
 
 def save_all(
@@ -79,6 +79,15 @@ def _save_figure(fig, suffix: str, directory: Path, name: str, timestamp: str) -
     file_path = next(path_iter)
     save_fig(file_path, fig)
     return file_path
+
+def save_py_by_dir_or_path_with_timestamp(path: Path | str, payload, name: str, extension: str):
+    path = Path(path)
+    if path.is_dir():
+        path /= '{name}.{extension}'
+    elif path.suffix == extension:
+        path.with_suffix(f'.{extension}')
+    add_time_stamp(path).write_text(payload)
+
 
 
 

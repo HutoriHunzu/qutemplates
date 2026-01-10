@@ -6,7 +6,7 @@ from abc import ABC, abstractmethod
 
 from qm import FullQuaConfig
 
-from ..context import OPXContext, OPXManagerAndMachine
+from ..context import OPXContext
 from ..simulation import SimulationData
 
 
@@ -22,7 +22,7 @@ class BaseOpxHandler(ABC):
         pass
 
     @abstractmethod
-    def open(self) -> OPXManagerAndMachine:
+    def open(self):
         """Open connection to quantum hardware."""
         pass
 
