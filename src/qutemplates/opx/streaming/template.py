@@ -13,7 +13,7 @@ from matplotlib.figure import Figure
 from ..artefacts_registry import ArtefactRegistry
 from ..base import BaseOPX
 from ..constants import ExportConstants
-from ..handler import BaseOpxHandler, OPXContext
+from ..handler import OPXContext
 from ..simulation import SimulationData
 from ..tools import Averager, AveragerInterface
 from .interface import StreamingInterface
