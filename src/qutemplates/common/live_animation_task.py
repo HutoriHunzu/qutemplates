@@ -34,6 +34,11 @@ CleanupFuncType = Callable[[tuple[Figure, list[Artist]]], None]
 UpdateFuncType = Callable[[list[Artist], T], list[Artist]]
 
 
+BTN_SIZE_IN = 0.45   # physical size in inches -> consistent on screen
+BTN_Y = 0.90
+BTN_MARGIN = 0.02
+
+
 class LiveAnimationTask(Task):
     """
     Runs a Matplotlib animation in the main thread, updating plots in real-time.
@@ -254,28 +259,57 @@ class LiveAnimationTask(Task):
         self.context.status = Status.REJECT
         self.stop_from_button()
 
-    def add_stop_button(self):
-        """Add stop button to the figure."""
-        ax_stop = self.figure.add_axes((0.1, 0.9, 0.08, 0.08))
-        ax_stop.set_axis_off()
-        button = Button(ax_stop, "", image=STOP_ICON)
-        button.on_clicked(self.stop_when_button_pressed)
-        self._buttons.append(button)
+    # def add_stop_button(self):
+    #     """Add stop button to the figure."""
+    #     ax_stop = self.figure.add_axes((0.1, 0.9, 0.08, 0.08))
+    #     ax_stop.set_axis_off()
+    #     button = Button(ax_stop, "", image=STOP_ICON)
+    #     button.on_clicked(self.stop_when_button_pressed)
+    #     self._buttons.append(button)
 
-    def add_continue_button(self):
-        """Add continue/save button to the figure."""
-        ax_continue = self.figure.add_axes((0.9, 0.9, 0.08, 0.08))
-        ax_continue.set_axis_off()
-        button = Button(ax_continue, "", image=SAVE_ICON)
-        button.on_clicked(self.continue_when_button_pressed)
-        self._buttons.append(button)
+    # def add_continue_button(self):
+    #     """Add continue/save button to the figure."""
+    #     ax_continue = self.figure.add_axes((0.9, 0.9, 0.08, 0.08))
+    #     ax_continue.set_axis_off()
+    #     button = Button(ax_continue, "", image=SAVE_ICON)
+    #     button.on_clicked(self.continue_when_button_pressed)
+    #     self._buttons.append(button)
+
+    # def add_reject_button(self):
+    #     ax_continue = self.figure.add_axes((0.12, 0.9, 0.08, 0.08))
+    #     ax_continue.set_axis_off()
+    #     button = Button(ax_continue, "", image=REJECT_ICON)
+    #     button.on_clicked(self.reject_when_button_pressed)
+    #     self._buttons.append(button)
+
+    def _add_icon_button(self, x, icon, callback):
+        fig = self.figure
+        fw, fh = fig.get_size_inches()
+
+        # convert inches -> figure-fraction so width/height become square in pixels
+        w = BTN_SIZE_IN / fw
+        h = BTN_SIZE_IN / fh
+
+        ax = fig.add_axes((x, BTN_Y, w, h))
+        ax.set_axis_off()
+
+        btn = Button(ax, "", image=icon)
+        btn.on_clicked(callback)
+        self._buttons.append(btn)
+
+    def add_stop_button(self):
+        self._add_icon_button(0.10, STOP_ICON, self.stop_when_button_pressed)
 
     def add_reject_button(self):
-        ax_continue = self.figure.add_axes((0.12, 0.9, 0.08, 0.08))
-        ax_continue.set_axis_off()
-        button = Button(ax_continue, "", image=REJECT_ICON)
-        button.on_clicked(self.reject_when_button_pressed)
-        self._buttons.append(button)
+        self._add_icon_button(0.20, REJECT_ICON, self.reject_when_button_pressed)
+
+    def add_continue_button(self):
+        # place from the right edge so it never gets squeezed
+        fig = self.figure
+        fw, _ = fig.get_size_inches()
+        w = BTN_SIZE_IN / fw
+        x = 1.0 - BTN_MARGIN - w
+        self._add_icon_button(x, SAVE_ICON, self.continue_when_button_pressed)
 
     def step(self, frame):
         """
