@@ -118,3 +118,8 @@ def generate_unique_save_name(
         full_path = f"{incremented_file_path}.{extension}" if extension else incremented_file_path
         yield Path(full_path)
         increment += 1
+
+
+
+def add_time_stamp(path: Path) -> Path:
+    return path.with_stem(f'{path.stem}_{time_stamp()}')

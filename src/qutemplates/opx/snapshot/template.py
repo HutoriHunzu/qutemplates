@@ -10,7 +10,7 @@ import matplotlib.pyplot as plt
 from matplotlib.artist import Artist
 from matplotlib.figure import Figure
 
-from qutemplates.export import ArtifactKind, ArtifactRegistry, save
+from qutemplates.export import ArtifactKind, ArtifactRegistry, add_time_stamp, save
 
 from ..averager import Averager, AveragerInterface
 from ..base import BaseOPX
@@ -84,19 +84,24 @@ class SnapshotOPX(BaseOPX, Generic[T]):
         self.update_plot(artists, data)
         return fig
 
-    def save_all(self, save_dir: Path, data: Any, fig: Figure):
+    def save_all(self, save_dir: Path, data: Any, fig: Figure | None = None):
         save.save_all(self.artifacts, save_dir, self.name, figures=fig)
 
     def execute(
         self,
         strategy: SnapshotStrategy = "live_plotting_with_progress",
         show_execution_graph: bool = False,
+        debug_script_path: Path | str | None = None
     ) -> T:
         """Execute snapshot experiment with workflow."""
         # Setup
         self.artifacts.reset()
         self.artifacts.register(ExportConstants.PARAMETERS, self.parameters)
         self.pre_run()
+
+        if debug_script_path:
+            add_time_stamp(Path(debug_script_path)).write_text(self.create_qua_script())
+
         self.artifacts.register(
             ExportConstants.QUA_SCRIPT, self.create_qua_script(), kind=ArtifactKind.PY
         )
