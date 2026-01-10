@@ -5,11 +5,11 @@ Provides a platform-agnostic task for displaying progress during long-running
 operations. Polls user-provided callbacks to update the progress bar.
 """
 
-from typing import Callable
+from collections.abc import Callable
 
-from tqdm import tqdm
-from quflow.tasks.base import Task, TaskContext
 from quflow.status import Status
+from quflow.tasks.base import Task, TaskContext
+from tqdm import tqdm
 
 
 class ProgressTask(Task):

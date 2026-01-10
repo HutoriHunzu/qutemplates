@@ -8,8 +8,8 @@ from quflow import ParallelNode, Workflow, create_single_item_channel
 
 from qutemplates.common import LiveAnimationTask
 
-from ...tools import AveragerInterface
-from ..node_names import OPXNodeName
+from ..averager import AveragerInterface
+from .node_names import OPXNodeName
 
 
 def add_live_animation(

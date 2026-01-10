@@ -6,19 +6,18 @@ with real-time data updates. Platform-agnostic and reusable across different
 workflow systems.
 """
 
-from typing import Callable, TypeVar
 import pathlib
+from collections.abc import Callable
+from typing import TypeVar
 
-from matplotlib.figure import Figure
-from matplotlib.artist import Artist
-from matplotlib.animation import FuncAnimation
 import matplotlib.pyplot as plt
+from matplotlib.animation import FuncAnimation
+from matplotlib.artist import Artist
+from matplotlib.figure import Figure
 from matplotlib.widgets import Button
 from PyQt6.QtCore import QTimer
-
 from quflow import Task, TaskContext
 from quflow.status import Status
-
 
 # Load button icons from resources
 dir_path = pathlib.Path(__file__).parent.absolute()
