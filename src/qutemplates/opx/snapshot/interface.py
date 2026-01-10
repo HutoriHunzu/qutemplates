@@ -1,13 +1,14 @@
 # Snapshot experiment interface for workflow construction
 
+from collections.abc import Callable
 from dataclasses import dataclass
-from typing import Callable, TypeVar, Generic, Any
+from typing import Any, Generic, TypeVar
 
 from matplotlib.artist import Artist
 from matplotlib.figure import Figure
 
-from ..hardware import OPXContext, AveragerInterface
-
+from ..handler import OPXContext
+from ..tools import AveragerInterface
 
 T = TypeVar("T")
 

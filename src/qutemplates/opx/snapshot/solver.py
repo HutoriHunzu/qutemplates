@@ -9,15 +9,16 @@ Strategies:
 """
 
 from typing import Literal
+
 from quflow import Workflow
 
-from .interface import SnapshotInterface
 from ..shared.components import (
+    add_live_animation,
     create_job_polling,
     create_progress_bar,
-    add_live_animation,
 )
-from .components import create_fetch_post_skeleton
+from .data_acquisition import create_fetch_post_skeleton
+from .interface import SnapshotInterface
 
 # Type alias for snapshot strategies
 SnapshotStrategy = Literal[
