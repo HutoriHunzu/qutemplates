@@ -7,8 +7,8 @@ updates to the data pipeline.
 from quflow import ParallelNode, Workflow, create_single_item_channel
 
 from qutemplates.common import LiveAnimationTask
-from qutemplates.opx.handler.averager import AveragerInterface
 
+from ...tools import AveragerInterface
 from ..node_names import OPXNodeName
 
 

@@ -6,8 +6,8 @@ This module provides progress tracking for experiments using the Averager interf
 from quflow import ParallelNode, Workflow
 
 from qutemplates.common.tasks import ProgressTask
-from qutemplates.opx.handler.averager import AveragerInterface
 
+from ...tools.averager import AveragerInterface
 from ..node_names import OPXNodeName
 
 
