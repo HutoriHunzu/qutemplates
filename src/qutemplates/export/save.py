@@ -80,14 +80,11 @@ def _save_figure(fig, suffix: str, directory: Path, name: str, timestamp: str) -
     save_fig(file_path, fig)
     return file_path
 
+
 def save_py_by_dir_or_path_with_timestamp(path: Path | str, payload, name: str, extension: str):
     path = Path(path)
     if path.is_dir():
-        path /= '{name}.{extension}'
+        path /= "{name}.{extension}"
     elif path.suffix == extension:
-        path.with_suffix(f'.{extension}')
+        path.with_suffix(f".{extension}")
     add_time_stamp(path).write_text(payload)
-
-
-
-

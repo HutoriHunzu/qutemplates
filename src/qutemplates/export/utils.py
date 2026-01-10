@@ -120,6 +120,5 @@ def generate_unique_save_name(
         increment += 1
 
 
-
 def add_time_stamp(path: Path) -> Path:
-    return path.with_stem(f'{path.stem}_{time_stamp()}')
+    return path.with_stem(f"{path.stem}_{time_stamp()}")

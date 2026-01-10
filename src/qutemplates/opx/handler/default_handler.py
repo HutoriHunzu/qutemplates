@@ -26,7 +26,7 @@ class DefaultOpxHandler(BaseOpxHandler):
     @property
     def manager_and_machine(self) -> OPXManagerAndMachine:
         if self._manager_and_machine is None:
-            raise ValueError('Manager and machine are not set, use open first')
+            raise ValueError("Manager and machine are not set, use open first")
         return self._manager_and_machine
 
     def get_or_create_qmm(self) -> QuantumMachinesManager:
@@ -84,7 +84,6 @@ class DefaultOpxHandler(BaseOpxHandler):
         if self._manager_and_machine is not None:
             self.manager_and_machine.machine.close()
             self._manager_and_machine = None
-
 
     def generate_qua_script(self, program) -> str:
         return generate_qua_script(program, self.config)

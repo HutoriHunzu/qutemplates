@@ -91,7 +91,7 @@ class SnapshotOPX(BaseOPX, Generic[T]):
         self,
         strategy: SnapshotStrategy = "live_plotting_with_progress",
         show_execution_graph: bool = False,
-        debug_script_path: Path | str | None = None
+        debug_script_path: Path | str | None = None,
     ) -> T:
         """Execute snapshot experiment with workflow."""
         # Setup
@@ -100,8 +100,9 @@ class SnapshotOPX(BaseOPX, Generic[T]):
         self.pre_run()
 
         if debug_script_path:
-            save.save_py_by_dir_or_path_with_timestamp(debug_script_path, self.create_qua_script(),
-                                                       'debug', 'py')
+            save.save_py_by_dir_or_path_with_timestamp(
+                debug_script_path, self.create_qua_script(), "debug", "py"
+            )
 
         self.artifacts.register(
             ExportConstants.QUA_SCRIPT, self.create_qua_script(), kind=ArtifactKind.PY

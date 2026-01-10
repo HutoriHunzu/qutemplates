@@ -68,7 +68,7 @@ class CachingOpxHandler(BaseOpxHandler):
     @property
     def manager_and_machine(self) -> OPXManagerAndMachine:
         if self._manager_and_machine is None:
-            raise ValueError('Manager and machine are not set, use open first')
+            raise ValueError("Manager and machine are not set, use open first")
         return self._manager_and_machine
 
     def open(self):
@@ -128,7 +128,6 @@ class CachingOpxHandler(BaseOpxHandler):
         if self._cache_key and self._cache_key in self._cache:
             machine = self._cache.pop(self._cache_key)
             machine.close()
-
 
     def generate_qua_script(self, program) -> str:
         return generate_qua_script(program, self.config)
