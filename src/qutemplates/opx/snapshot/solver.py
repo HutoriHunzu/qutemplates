@@ -12,7 +12,7 @@ from typing import Literal
 
 from quflow import Workflow
 
-from ..shared.components import (
+from ..shared import (
     add_live_animation,
     create_job_polling,
     create_progress_bar,
