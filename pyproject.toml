@@ -1,8 +1,9 @@
 [project]
 name = "qutemplates"
-version = "0.2.0"
-description = "Add your description here"
+version = "0.3.0"
+description = "Experiment templates for Quantum Machines OPX hardware"
 readme = "README.md"
+license = "MIT"
 authors = [
     { name = "Uri Goldblatt", email = "uri.goldblatt@gmail.com" }
 ]
@@ -10,8 +11,10 @@ requires-python = ">=3.11"
 dependencies = [
     "qm-qua>=1.2.4a1",
     "tqdm",
-    "quflow>=0.2.0",
-    "PyQt6"
+    "quflow>=0.3.3",
+    "PyQt6",
+    "matplotlib",
+    "pycaddy>=0.2.0"
 ]
 
 [project.optional-dependencies]

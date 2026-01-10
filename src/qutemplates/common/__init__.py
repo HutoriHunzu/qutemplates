@@ -1,19 +1,20 @@
-"""Common experiment infrastructure - generic components for all experiments."""
+"""
+Generic task templates for workflow orchestration.
 
-# from .control_panel import ControlPanel
-# from .feature_context import FeatureContext
-# from .protocol import ExperimentProtocol, ExecutionStrategy, Feature
-# from .orchestration import ParallelBlock
-from .tasks import LiveAnimationTask, ProgressTask
+This module provides platform-agnostic task implementations that can be used
+with any workflow execution system. Tasks follow the dependency injection pattern,
+receiving all configuration via constructor parameters rather than relying on
+context or global state.
 
-#
+Available Tasks:
+    - LiveAnimationTask: Real-time matplotlib animation with data updates
+    - ProgressTask: tqdm-based progress bar with polling
+"""
+
+from .live_animation_task import LiveAnimationTask
+from .progress_task import ProgressTask
+
 __all__ = [
-    "ProgressTask",
     "LiveAnimationTask",
-    # 'ControlPanel',
-    # 'FeatureContext',
-    # 'ExperimentProtocol',
-    # 'ExecutionStrategy',
-    # 'Feature',
-    # 'ParallelBlock',
+    "ProgressTask",
 ]
