@@ -1,21 +1,24 @@
 # Snapshot experiment: fetch all accumulated data at once
 
 from abc import abstractmethod
-from typing import TypeVar
+from typing import Any, Generic, TypeVar
 
 import matplotlib.pyplot as plt
 from matplotlib.artist import Artist
 from matplotlib.figure import Figure
 
+from ..artefacts_registry import ArtefactRegistry
 from ..base import BaseOPX
 from ..constants import ExportConstants
-from .interface import SnapshotInterface, LivePlottingInterface
+from ..handler import BaseOpxHandler, OPXContext
+from ..tools import Averager, AveragerInterface
+from .interface import LivePlottingInterface, SnapshotInterface
 from .solver import SnapshotStrategy, solve_strategy
 
 T = TypeVar("T")
 
 
-class SnapshotOPX(BaseOPX[T]):
+class SnapshotOPX(BaseOPX, Generic[T]):
     """Snapshot OPX template for experiments with continuous data accumulation.
 
     Designed for programs where data is continuously updated and always accessible.
@@ -42,6 +45,13 @@ class SnapshotOPX(BaseOPX[T]):
     """
 
     # Abstract - user must implement
+    def __init__(self):
+        super().__init__()  # Initialize BaseOPX contract (handler, context, averager)
+        self.name = ""
+        self.data: Any = None
+        self.parameters: Any = None
+        self._registry: ArtefactRegistry = ArtefactRegistry()
+
 
     @abstractmethod
     def fetch_results(self):
@@ -73,26 +83,25 @@ class SnapshotOPX(BaseOPX[T]):
         return fig
 
     # Execution
-
     def execute(
         self,
         strategy: SnapshotStrategy = "live_plotting_with_progress",
-        debug_script_path: str | None = None,
         show_execution_graph: bool = False,
     ) -> T:
         """Execute snapshot experiment with workflow."""
 
         # Reset and setup
-        self.reset()
-        self.register_data(ExportConstants.PARAMETERS, self.parameters)
+        self._registry.reset()
+        self._registry.register(ExportConstants.PARAMETERS, self.parameters)
         self.pre_run()
 
-        # Open hardware
-        self._open_hardware()
-        self.register_data(ExportConstants.DEBUG, self.opx_context.debug_script)
+        self._registry.register(ExportConstants.QUA_SCRIPT, self.opx_handler.create_qua_scirpt())
+
+        # Open hardware and execute
+        opx_context = self._open_hardware()
 
         # Build and execute workflow
-        interface = self._create_interface()
+        interface = self._create_interface(opx_context)
 
         # Solve strategy and execute workflow using local solver
         workflow = solve_strategy(strategy, interface)
@@ -106,13 +115,13 @@ class SnapshotOPX(BaseOPX[T]):
         # Final fetch and process
         raw_data = self.fetch_results()
         self.data = self.post_run(raw_data)
-        self.register_data(ExportConstants.DATA, self.data)
+        self._registry.register(ExportConstants.DATA, self.data)
 
         # Close
         self._close_hardware()
         return self.data
 
-    def _create_interface(self) -> SnapshotInterface:
+    def _create_interface(self, opx_context: OPXContext) -> SnapshotInterface:
         """
         Create snapshot interface with all required components.
 
@@ -125,10 +134,11 @@ class SnapshotOPX(BaseOPX[T]):
         Returns:
             SnapshotInterface with all components properly initialized
         """
+
         # Load averager interface if averager is used
         averager_interface = None
         if self._averager is not None:
-            averager_interface = self.averager.generate_interface(self.opx_context.result_handles)
+            averager_interface = self.averager.generate_interface(opx_context.result_handles)
             self._averager_interface = averager_interface
 
         # Create live plotting interface only if both methods implemented
@@ -144,7 +154,7 @@ class SnapshotOPX(BaseOPX[T]):
             fetch_results=self.fetch_results,
             post_run=self.post_run,
             experiment_name=self.name,
-            opx_context=self.opx_context,
+            opx_context=opx_context,
             averager_interface=averager_interface,
             live_plotting=live_plotting_interface,
         )

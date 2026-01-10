@@ -4,12 +4,12 @@ This module provides real-time plotting capability by connecting matplotlib
 updates to the data pipeline.
 """
 
-from quflow import Workflow, ParallelNode, create_single_item_channel
+from quflow import ParallelNode, Workflow, create_single_item_channel
 
-from qutemplates.opx.hardware.averager import AveragerInterface
+from qutemplates.common import LiveAnimationTask
+from qutemplates.opx.handler.averager import AveragerInterface
 
 from ..node_names import OPXNodeName
-from qutemplates.common import LiveAnimationTask
 
 
 def add_live_animation(

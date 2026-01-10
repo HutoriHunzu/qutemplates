@@ -2,48 +2,31 @@
 # Pure infrastructure - no execute() method, no workflow knowledge
 
 from abc import ABC, abstractmethod
-from typing import TypeVar, Any
 
-from matplotlib.figure import Figure
-import matplotlib.pyplot as plt
-
-from .hardware import Averager, OPXContext, AveragerInterface, BaseOpxHandler
-from ..experiments.template import Template
-from .utilities import save_all
-from .constants import ExportConstants
+from .handler import Averager, AveragerInterface, BaseOpxHandler, OPXContext
 
 
-T = TypeVar("T")
+class BaseOPX(ABC):
+    """Minimal OPX hardware lifecycle contract.
 
+    Provides core infrastructure for OPX experiment templates:
+    - Abstract methods for program definition and handler construction
+    - Hardware lifecycle: _open_hardware(), _close_hardware()
+    - Handler and context management via properties
+    - Averager support for progress tracking
+    - Simulation capabilities
 
-class BaseOPX(Template[T], ABC):
-    """Base infrastructure for OPX experiments with hardware lifecycle and data management.
-
-    Provides core functionality for all OPX experiment types including hardware
-    connection, program execution, data registration, and export capabilities.
-    Subclasses define specific execution patterns (snapshot, streaming, interactive).
-
-    Abstract Methods:
+    Templates must implement:
         define_program(): Define QUA program within program context.
         construct_opx_handler(): Create OPX handler for hardware lifecycle.
 
-    Infrastructure Provided:
-        Hardware lifecycle: _open_hardware(), _close_hardware().
-        Data management: reset(), register_data(), export_data(), save_all().
-        Simulation: simulate() for hardware-free testing.
-        Properties: opx_context, opx_handler, averager, averager_interface.
-
-    Subclasses:
+    Templates own their execution semantics:
         SnapshotOPX: Fetch all accumulated data at once.
         StreamingOPX: Incremental chunk-based data fetching.
         InteractiveOPX: Point-by-point evaluation for optimization.
     """
 
     def __init__(self):
-        self.name = ""
-        self.data: T | None = None
-        self.parameters: Any = None
-        self._accumulated_data: dict[str, Any] = {}
         self._opx_context: OPXContext | None = None
         self._opx_handler: BaseOpxHandler | None = None
         self._averager: Averager | None = None
@@ -70,52 +53,13 @@ class BaseOPX(Template[T], ABC):
         """
         pass
 
-    # Data management (Public API)
-
-    def reset(self):
-        """Reset accumulated data and context for new execution."""
-        self._accumulated_data = {}
-        self._opx_context = None
-
-    def register_data(self, name: str, data: Any):
-        """Register data for export with a given name."""
-        self._accumulated_data[name] = data
-
-    def export_data(self) -> dict:
-        """Export accumulated data filtered by ExportConstants."""
-        return {k: self._accumulated_data[k]
-                for k in ExportConstants
-                if k in self._accumulated_data}
-
-    def save_all(
-        self,
-        path: str,
-        data: T,
-        figs: list[Figure] | None = None,
-        save_debug: bool = True,
-        close_figs: bool = True,
-    ):
-        self.register_data(ExportConstants.DATA, data)
-        export_data = self.export_data()
-
-        if save_debug:
-            debug_data = export_data.pop(ExportConstants.DEBUG, None)
-        else:
-            debug_data = None
-
-        save_all(self.name, path, data=export_data, figs=figs, debug_data=debug_data)
-
-        if close_figs and figs:
-            plt.close("all")
-
-    # Hardware lifecycle helpers
-
     @property
     def opx_handler(self) -> BaseOpxHandler:
-        """Current OPX handler. Available after _open_hardware()."""
         if self._opx_handler is None:
-            raise RuntimeError("OPX handler not available. Call _open_hardware() first.")
+            self._opx_handler = self.construct_opx_handler()
         return self._opx_handler
+
+    # Hardware lifecycle helpers
 
     def _open_hardware(self) -> OPXContext:
         """Connect to hardware and execute program.
@@ -187,9 +131,10 @@ class BaseOPX(Template[T], ABC):
         Returns:
             Simulation data from QM simulator.
         """
-        from .hardware.simulation import simulate_program
-        from .utilities import ns_to_clock_cycles
         from qm import generate_qua_script
+
+        from .handler.simulation import simulate_program
+        from .utilities import ns_to_clock_cycles
 
         # Create handler with config
         handler = self.construct_opx_handler()

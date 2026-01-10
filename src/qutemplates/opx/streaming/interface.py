@@ -1,14 +1,14 @@
 # Streaming experiment interface for workflow construction
 
+from collections.abc import Callable
 from dataclasses import dataclass
-from typing import Callable, TypeVar, Generic, Any
 from queue import Queue
+from typing import Any, Generic, TypeVar
 
 from matplotlib.artist import Artist
 from matplotlib.figure import Figure
 
-from ..hardware import OPXContext, AveragerInterface
-
+from ..handler import AveragerInterface, OPXContext
 
 T = TypeVar("T")
 

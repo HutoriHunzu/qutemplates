@@ -1,8 +1,9 @@
-from quflow import Workflow, ParallelNode, ContextFuncTask, PollingTask, TaskContext
-
-from ..node_names import OPXNodeName
-from ...hardware import OPXContext
 from functools import partial
+
+from quflow import ContextFuncTask, ParallelNode, PollingTask, TaskContext, Workflow
+
+from ...handler import OPXContext
+from ..node_names import OPXNodeName
 
 
 def check_job_is_running_and_set_interrupt(ctx: TaskContext, opx_ctx: OPXContext):

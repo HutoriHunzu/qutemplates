@@ -1,11 +1,11 @@
 # Interactive experiment: point-by-point evaluation
 
 from abc import abstractmethod
-from typing import TypeVar, Generic, Iterable
+from collections.abc import Iterable
+from typing import Generic, TypeVar
 
 from ..base import BaseOPX
-from ..hardware import BaseOpxHandler, DefaultOpxHandler
-
+from ..handler import BaseOpxHandler, DefaultOpxHandler
 
 # Two type parameters: Point (input) and Result (output)
 Point = TypeVar("Point")

@@ -1,16 +1,16 @@
 """OPX-specific experiment implementation."""
 
 # Import new names
-from .snapshot import SnapshotOPX, BatchOPX  # BatchOPX is backward compatibility alias
-from .streaming import StreamingOPX
-from .interactive import InteractiveOPX
-from .hardware import (
+from .handler import (
+    Averager,
     BaseOpxHandler,
     DefaultOpxHandler,
-    OPXHandler,
     OPXContext,
-    Averager,
+    OPXHandler,
 )
+from .interactive import InteractiveOPX
+from .snapshot import BatchOPX, SnapshotOPX  # BatchOPX is backward compatibility alias
+from .streaming import StreamingOPX
 
 __all__ = [
     "SnapshotOPX",

@@ -6,9 +6,11 @@ and callables for passing to the graph builder. This enables clean dependency
 injection without coupling to the experiment object.
 """
 
+from collections.abc import Callable
 from dataclasses import dataclass
-from typing import Callable, Any
-from .hardware import OPXContext, AveragerInterface
+from typing import Any
+
+from .handler import AveragerInterface, OPXContext
 
 
 @dataclass

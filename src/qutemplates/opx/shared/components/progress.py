@@ -3,12 +3,12 @@
 This module provides progress tracking for experiments using the Averager interface.
 """
 
-from quflow import Workflow, ParallelNode
+from quflow import ParallelNode, Workflow
 
-from qutemplates.opx.hardware.averager import AveragerInterface
+from qutemplates.common.tasks import ProgressTask
+from qutemplates.opx.handler.averager import AveragerInterface
 
 from ..node_names import OPXNodeName
-from qutemplates.common.tasks import ProgressTask
 
 
 def create_progress_bar(flow: Workflow, averager_interface: AveragerInterface):

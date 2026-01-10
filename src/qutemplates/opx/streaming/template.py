@@ -1,19 +1,18 @@
 # Streaming experiment: incremental chunk semantics
 
 from abc import abstractmethod
-from typing import TypeVar, Any
 from queue import Queue
+from typing import Any, TypeVar
 
+import matplotlib.pyplot as plt
 from matplotlib.artist import Artist
 from matplotlib.figure import Figure
-import matplotlib.pyplot as plt
 
 from ..base import BaseOPX
+from ..constants import ExportConstants
+from ..handler import BaseOpxHandler, DefaultOpxHandler
 from .interface import StreamingInterface
 from .solver import StreamingStrategy, solve_strategy
-from ..constants import ExportConstants
-from ..hardware import BaseOpxHandler, DefaultOpxHandler
-
 
 T = TypeVar("T")
 
