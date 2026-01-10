@@ -7,8 +7,8 @@ from typing import Any, Generic, TypeVar
 from matplotlib.artist import Artist
 from matplotlib.figure import Figure
 
+from ..averager import AveragerInterface
 from ..handler import OPXContext
-from ..tools import AveragerInterface
 
 T = TypeVar("T")
 

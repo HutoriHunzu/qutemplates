@@ -1,9 +1,8 @@
 import threading
 
-from qm.qua import StreamType, declare, declare_stream, save
-
-from qm.jobs.running_qm_job import StreamsManager
-from qm.qua.type_hints import QuaVariable
+from qm import StreamsManager
+from qm.qua import declare, declare_stream, save
+from qm.qua.type_hints import QuaVariable, ResultStreamSource
 
 
 class AveragerInterface:
@@ -75,8 +74,11 @@ class AveragerInterface:
             self._count = value
 
     def update(self) -> int:
-        value = self._result_handles.get(self._save_name).fetch(0)
-        value = 0 if value is None else value
+        fetcher = self._result_handles.get(self._save_name)
+        if fetcher is None:
+            raise TypeError(f"Averager cannot get result handler with save name: {self._save_name}")
+        value = fetcher.fetch(0)
+        value = 0 if value is None else int(value)
         value += 1
         self.count = value
         return value
@@ -139,7 +141,7 @@ class Averager:
         """Initialize averager with default state."""
         self.total: int = 0
         self.save_name: str = "repetition_number"
-        self._stream: StreamType | None = None
+        self._stream: ResultStreamSource | None = None
         self._count: QuaVariable | None = None
 
     def init_vars(self):
@@ -152,11 +154,27 @@ class Averager:
     def n(self):
         return self._count
 
+    @property
+    def count(self) -> QuaVariable:
+        if self._count is None:
+            raise TypeError(
+                "Averager cannot use self.count without first initializing it using self.init_vars"
+            )
+        return self._count
+
+    @property
+    def stream(self) -> ResultStreamSource:
+        if self._stream is None:
+            raise TypeError(
+                "Averager cannot use self.stream without first initializing it using self.init_vars"
+            )
+        return self._stream
+
     def update_count(self):
-        save(self._count, self._stream)
+        save(self.count, self.stream)
 
     def stream_processing(self):
-        self._stream.save(self.save_name)
+        self.stream.save(self.save_name)
 
     def generate_interface(self, result_handles: StreamsManager) -> AveragerInterface | None:
         """
@@ -181,7 +199,7 @@ class Averager:
             >>> current_count = interface.update()  # Fetch from hardware
         """
         # Validate that averager was properly initialized in QUA program
-        if self._stream is None or self._count is None:
+        if self.stream is None or self.count is None:
             return None
             # raise ValueError(
             #     'Averager must be initialized in QUA program before generating interface. '

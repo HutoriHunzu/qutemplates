@@ -104,9 +104,7 @@ class SnapshotOPX(BaseOPX, Generic[T]):
 
         # Build averager interface if averager was used
         if self._averager is not None:
-            self._averager_interface = self.averager.generate_interface(
-                self.opx_context.result_handles
-            )
+            self._averager_interface = self.averager.generate_interface(self.opx_context.result_handles)
 
         # Build and execute workflow
         interface = self._create_interface()
