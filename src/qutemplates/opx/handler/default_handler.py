@@ -29,12 +29,7 @@ class DefaultOpxHandler(BaseOpxHandler):
     # Class-level: Shared QMMs per IP address
     _ip_to_manager: dict[str, QuantumMachinesManager] = {}
 
-    def __init__(
-        self,
-        opx_metadata,
-        config: FullQuaConfig,
-        program_callable: Callable[[], None]
-    ):
+    def __init__(self, opx_metadata, config: FullQuaConfig, program_callable: Callable[[], None]):
         """Initialize handler with metadata, config, and program.
 
         Args:
@@ -146,7 +141,7 @@ class DefaultOpxHandler(BaseOpxHandler):
         manager_and_machine: OPXManagerAndMachine,
         duration_ns: int,
         flags: list[str] | None = None,
-        simulation_interface=None
+        simulation_interface=None,
     ) -> SimulationData:
         """Simulate program without hardware execution.
 
@@ -168,7 +163,7 @@ class DefaultOpxHandler(BaseOpxHandler):
             prog,
             duration_cycles,
             flags or [],
-            simulation_interface
+            simulation_interface,
         )
 
     def close(self, manager_and_machine: OPXManagerAndMachine | None = None) -> None:

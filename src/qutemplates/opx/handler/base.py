@@ -31,12 +31,7 @@ class BaseOpxHandler(ABC):
     _manager_and_machine: OPXManagerAndMachine | None = None
 
     @abstractmethod
-    def __init__(
-        self,
-        opx_metadata,
-        config: FullQuaConfig,
-        program_callable: Callable[[], None]
-    ):
+    def __init__(self, opx_metadata, config: FullQuaConfig, program_callable: Callable[[], None]):
         """Initialize handler with metadata, config, and program.
 
         Args:
@@ -86,7 +81,7 @@ class BaseOpxHandler(ABC):
         manager_and_machine: OPXManagerAndMachine,
         duration_ns: int,
         flags: list[str] | None = None,
-        simulation_interface=None
+        simulation_interface=None,
     ) -> SimulationData:
         """Simulate the program without hardware execution.
 
@@ -132,10 +127,7 @@ class BaseOpxHandler(ABC):
         return self.execute(self._manager_and_machine)
 
     def open_and_simulate(
-        self,
-        duration_ns: int,
-        flags: list[str] | None = None,
-        simulation_interface=None
+        self, duration_ns: int, flags: list[str] | None = None, simulation_interface=None
     ) -> SimulationData:
         """Open hardware, simulate program, close connection, and return data.
 
@@ -154,4 +146,3 @@ class BaseOpxHandler(ABC):
             return self.simulate(mm, duration_ns, flags, simulation_interface)
         finally:
             self.close(mm)
-

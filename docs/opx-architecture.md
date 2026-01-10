@@ -15,7 +15,7 @@ SnapshotOPX (template)  <-->  DefaultOpxHandler (handler)
 
 ## Templates
 
-Templates define execution patterns for experiments. Each template inherits from `BaseOPX` and implements its own `execute()` method with specific semantics.
+Templates define execution patterns for experiments. Each template inherits from `BaseOPX` and implements its own `execute()` and `simulate()` methods with specific semantics.
 
 ### SnapshotOPX
 
@@ -68,6 +68,5 @@ Minimal abstract base that templates must implement:
 
 Provides:
 - `opx_handler` property (lazy initialization)
-- `simulate()` method (delegates to handler)
 
-Templates own their execution semantics - BaseOPX has no `execute()` method.
+Templates own their execution semantics - BaseOPX has no `execute()` or `simulate()` methods.

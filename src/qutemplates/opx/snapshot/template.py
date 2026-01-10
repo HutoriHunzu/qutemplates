@@ -12,7 +12,8 @@ from matplotlib.figure import Figure
 from ..artefacts_registry import ArtefactRegistry
 from ..base import BaseOPX
 from ..constants import ExportConstants
-from ..handler import BaseOpxHandler, OPXContext
+from ..handler import OPXContext
+from ..simulation import SimulationData
 from ..tools import Averager, AveragerInterface
 from .interface import LivePlottingInterface, SnapshotInterface
 from .solver import SnapshotStrategy, solve_strategy
@@ -111,6 +112,42 @@ class SnapshotOPX(BaseOPX, Generic[T]):
         self.opx_handler.close()
 
         return self.data
+
+    def simulate(
+        self,
+        duration_ns: int,
+        debug_path: str | None = None,
+        auto_element_thread: bool = False,
+        not_strict_timing: bool = False,
+        simulation_interface=None,
+    ) -> SimulationData:
+        """Simulate program without hardware execution.
+
+        Args:
+            duration_ns: Simulation duration in nanoseconds.
+            debug_path: Optional path to save QUA debug script.
+            auto_element_thread: Enable auto-element-thread simulation flag.
+            not_strict_timing: Enable not-strict-timing simulation flag.
+            simulation_interface: Optional QM simulation interface.
+
+        Returns:
+            SimulationData from QM simulator.
+        """
+        self.pre_run()
+
+        flags: list[str] = []
+        if auto_element_thread:
+            flags.append("auto-element-thread")
+        if not_strict_timing:
+            flags.append("not-strict-timing")
+
+        data = self.opx_handler.open_and_simulate(duration_ns, flags, simulation_interface)
+
+        if debug_path:
+            with open(debug_path, "w") as f:
+                f.write(self.opx_handler.create_qua_script())
+
+        return data
 
     def _create_interface(self, opx_context: OPXContext) -> SnapshotInterface:
         """Create snapshot interface with all required components."""

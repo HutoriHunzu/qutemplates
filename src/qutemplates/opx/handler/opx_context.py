@@ -11,13 +11,10 @@ class OPXManagerAndMachine:
     manager: QuantumMachinesManager
     machine: QuantumMachine | QmApi
 
+
 @dataclass
 class OPXContext:
     manager: QuantumMachinesManager
     qm: QuantumMachine | QmApi
     job: RunningQmJob | JobApi
     result_handles: StreamsManager
-
-
-
-

@@ -2,14 +2,12 @@ from typing import Any
 
 
 class ArtefactRegistry:
-
     def __init__(self):
         self._db: dict = {}
 
-
     def register(self, key: str, data: Any):
         if self._db.get(key) is not None:
-            raise ValueError(f'Trying to overwrite register with key: {key}')
+            raise ValueError(f"Trying to overwrite register with key: {key}")
         self._db[key] = data
 
     def get(self, key: str, default=None) -> Any:
@@ -25,6 +23,3 @@ class ArtefactRegistry:
 
     def reset(self):
         self._db = {}
-
-
-

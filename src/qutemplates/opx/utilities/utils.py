@@ -1,13 +1,12 @@
-from pathlib import Path
-import numpy as np
-from typing import Dict, Iterable, Generator, Optional, Any, Union
-from dataclasses import dataclass
-import matplotlib.pyplot as plt
-import pickle
 import json
-from lmfit.model import ModelResult
-from dataclasses import is_dataclass, asdict
+import pickle
+from collections.abc import Generator, Iterable
+from dataclasses import asdict, dataclass, is_dataclass
 from datetime import datetime
+from pathlib import Path
+from typing import Any
+
+import numpy as np
 from pydantic import BaseModel
 
 
@@ -61,11 +60,11 @@ class JsonEncoder(json.JSONEncoder):
             return asdict(obj)
         elif isinstance(obj, (tuple, set)):
             return list(obj)
-        elif isinstance(obj, ModelResult):
-            return {
-                param_name: {"value": param.value, "stderr": param.stderr}
-                for param_name, param in obj.params.items()
-            }
+        # elif isinstance(obj, ModelResult):
+        #     return {
+        #         param_name: {"value": param.value, "stderr": param.stderr}
+        #         for param_name, param in obj.params.items()
+        #     }
         else:
             print(f"Couldn't serialize {type(obj)}. Solve it or save it as `pickle`.")
             return super(JsonEncoder, self).default(obj)
@@ -85,9 +84,6 @@ def pickle_save(path, data_obj):
 SAVE_FUNCTION_MAPPING = {"pickle": pickle_save, "json": json_save}
 
 DELIMITER = "__"
-
-FIGS = Union[Iterable[plt.Figure], plt.Figure]
-AXES = Union[Iterable[plt.Axes], plt.Axes]
 
 
 @dataclass
@@ -109,7 +105,7 @@ def convert_to_iterable(d: Any) -> Iterable[Any]:
     return d
 
 
-def convert_to_canonical_dict(data: Dict[str, Any]) -> Dict[str, Any]:
+def convert_to_canonical_dict(data: dict[str, Any]) -> dict[str, Any]:
     def _helper():
         for k, v in data.items():
             if not isinstance(v, dict):
@@ -122,13 +118,13 @@ def convert_to_canonical_dict(data: Dict[str, Any]) -> Dict[str, Any]:
     return dict(_helper())
 
 
-def save_dict(path: str, data: Dict, save_format: str = "json"):
+def save_dict(path: str, data: dict, save_format: str = "json"):
     func = SAVE_FUNCTION_MAPPING[save_format]
     validate_file_existence(path)
     func(path, data)
 
 
-def save_array(path: str, data: Dict[str, Iterable]):
+def save_array(path: str, data: dict[str, Iterable]):
     # if the data is dict we want to flatten it
     canonical_data = convert_to_canonical_dict(data)
     np.savez_compressed(f"{path}.npz", **canonical_data)
@@ -137,11 +133,6 @@ def save_array(path: str, data: Dict[str, Iterable]):
 def save_fig(path, fig):
     validate_file_existence(path)
     fig.savefig(path, bbox_inches="tight")
-
-
-def save_figs(paths: Iterable[str], figs: FIGS):
-    for path, fig in zip(paths, convert_to_iterable(figs)):
-        save_fig(path, fig)
 
 
 def validate_file_existence(path: str, raise_error=True) -> bool:
@@ -154,7 +145,7 @@ def validate_file_existence(path: str, raise_error=True) -> bool:
 
 
 def generate_unique_save_name(
-    path: str, name: str, suffix: str, saving_time: str, extension: Optional[str] = None
+    path: str, name: str, suffix: str, saving_time: str, extension: str | None = None
 ) -> Generator[str, None, None]:
     """
     returns a generator which generates full path for a file with the format of {name}_{suffix}_{saving_time}.
