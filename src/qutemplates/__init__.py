@@ -1,20 +1,16 @@
 # from .base import Template
 from .opx import (
-    Averager,
-    BatchOPX,
-    InteractiveOPX,
-    StreamingOPX,
-    OPXContext,
-    OPXHandler,
     DefaultOpxHandler,
+    InteractiveOPX,
+    OPXContext,
+    SnapshotOPX,
+    StreamingOPX,
 )
 
 __all__ = [
-    "BatchOPX",
+    "SnapshotOPX",
     "StreamingOPX",
     "InteractiveOPX",
     "OPXContext",
-    "OPXHandler",
-    "Averager",
     "DefaultOpxHandler",
 ]

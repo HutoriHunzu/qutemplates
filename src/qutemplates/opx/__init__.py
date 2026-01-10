@@ -2,14 +2,12 @@
 
 # Import new names
 from .handler import (
-    Averager,
     BaseOpxHandler,
     DefaultOpxHandler,
     OPXContext,
-    OPXHandler,
 )
 from .interactive import InteractiveOPX
-from .snapshot import BatchOPX, SnapshotOPX  # BatchOPX is backward compatibility alias
+from .snapshot import SnapshotOPX  # BatchOPX is backward compatibility alias
 from .streaming import StreamingOPX
 
 __all__ = [
@@ -19,7 +17,4 @@ __all__ = [
     "OPXContext",
     "BaseOpxHandler",
     "DefaultOpxHandler",
-    "OPXHandler",  # Backward compatibility
-    "Averager",
-    "BatchOPX",  # Backward compatibility
 ]
