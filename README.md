@@ -20,7 +20,7 @@ class MyExperiment(SnapshotOPX):
         pass
 
     def construct_opx_handler(self):
-        return DefaultOpxHandler(self.metadata, self.config, self.define_program)
+        return DefaultOpxHandler(self.metadata, self.config)
 
     def fetch_results(self):
         return self.context.result_handles.get("I").fetch_all()
@@ -29,7 +29,10 @@ exp = MyExperiment()
 data = exp.execute()
 ```
 
-See [Documentation](docs/) for details on templates and handlers.
+## Documentation
+
+- [SnapshotOPX](docs/snapshot.md) - Template for accumulated data experiments
+- [Handlers](docs/handlers.md) - Hardware lifecycle management
 
 ## Development
 
