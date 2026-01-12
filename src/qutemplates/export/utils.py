@@ -33,7 +33,7 @@ class JsonEncoder(json.JSONEncoder):
             return {"real part": o.real, "imaginary part": o.imag}
         elif isinstance(o, BaseModel):
             return o.model_dump(mode="json")
-        elif is_dataclass(o):
+        elif is_dataclass(o) and not isinstance(o, type):
             return asdict(o)
         elif isinstance(o, (tuple, set)):
             return list(o)
@@ -53,7 +53,6 @@ def pickle_save(path, data_o):
 
 
 SAVE_FUNCTION_MAPPING = {"pickle": pickle_save, "json": json_save}
-
 DELIMITER = "__"
 
 
